@@ -2,7 +2,7 @@
 
 /* Top Bar - Exercise Selector + Controls */
 .top-bar {
-  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-doom-surface/80 backdrop-blur-sm rounded-xl border border-doom-primary/20 mb-4;
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-doom-surface/80 backdrop-blur-sm rounded-xl border border-doom-primary/20 mb-4 max-w-full;
 }
 
 .exercise-selector-container {
@@ -25,9 +25,14 @@
   @apply absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-doom-primary pointer-events-none;
 }
 
+/* Help Button */
+.help-button {
+  @apply flex items-center justify-center w-10 h-10 bg-doom-surface border-2 border-doom-primary/30 text-doom-primary rounded-full hover:bg-doom-primary/10 hover:border-doom-primary transition-colors cursor-pointer;
+}
+
 /* Control Buttons - Horizontal Layout */
 .control-buttons-horizontal {
-  @apply flex flex-wrap items-center gap-2;
+  @apply flex flex-wrap items-center gap-2 max-w-full;
 }
 
 .btn-primary {
@@ -42,59 +47,114 @@
   @apply flex items-center gap-2 px-4 py-2 bg-doom-surface border border-doom-primary/30 text-doom-text rounded-lg font-semibold text-sm hover:border-doom-primary hover:bg-doom-bg transition-colors;
 }
 
-/* Camera Container - Maximum Visibility */
+/* Camera Container - Full Width, Maximized for full body view */
 .camera-container {
-  @apply w-full mb-4;
+  @apply w-full mb-8 rounded-xl overflow-hidden border-2 border-doom-primary/30 bg-doom-surface/50 max-w-full;
+  min-height: 70vh;
+  height: 70vh;
+  max-height: 80vh;
 }
 
-/* Override WebcamCapture aspect ratio for larger view */
-.camera-container .aspect-video {
-  aspect-ratio: 16 / 9;
-  min-height: 60vh;
-  max-height: 75vh;
+.camera-container > * {
+  @apply h-full w-full;
 }
 
-/* Compact Metrics Bar - One Line */
+/* Compact Metrics Bar - Horizontal Pills */
 .metrics-bar {
-  @apply flex flex-wrap items-center justify-center gap-3 p-4 bg-doom-surface/50 rounded-xl border border-doom-primary/20 mb-4;
+  @apply flex flex-wrap items-center gap-3 p-4 bg-doom-surface/80 backdrop-blur-sm rounded-xl border border-doom-primary/20 mb-4 max-w-full;
 }
 
+/* Metric Pills */
 .metric-pill {
-  @apply flex items-center gap-2 px-4 py-2 bg-doom-bg rounded-full border border-doom-primary/30;
+  @apply flex items-center gap-2 px-4 py-2.5 bg-doom-bg border border-doom-primary/30 rounded-full text-sm font-semibold transition-all hover:border-doom-primary hover:scale-105;
 }
 
-.metric-pill-label {
-  @apply text-doom-muted text-sm font-medium;
+.metric-pill-primary {
+  @apply bg-doom-primary/10 border-2 border-doom-primary;
 }
 
-.metric-pill-value {
-  @apply text-doom-text text-sm font-bold;
+.metric-pill-phase {
+  @apply px-5;
 }
 
-/* Phase Indicator Pill */
-.phase-pill {
-  @apply border-2;
+.metric-label {
+  @apply text-doom-muted text-xs uppercase tracking-wide;
 }
 
-.phase-up {
-  @apply bg-doom-primary/10 border-doom-primary;
+.metric-value {
+  @apply text-doom-text text-base font-bold;
 }
 
-.phase-up .metric-pill-value {
+/* Phase Colors */
+.metric-pill.phase-up {
+  @apply bg-doom-primary/10 border-2 border-doom-primary text-doom-primary;
+}
+
+.metric-pill.phase-up .metric-label {
   @apply text-doom-primary;
 }
 
-.phase-down {
-  @apply bg-doom-accent/10 border-doom-accent;
+.metric-pill.phase-down {
+  @apply bg-doom-accent/10 border-2 border-doom-accent text-doom-accent;
 }
 
-.phase-down .metric-pill-value {
+.metric-pill.phase-down .metric-label {
   @apply text-doom-accent;
 }
 
+/* Primary pill styling (Reps counter) */
+.metric-pill-primary .metric-label {
+  @apply text-doom-primary;
+}
+
+.metric-pill-primary .metric-value {
+  @apply text-doom-primary text-lg;
+  text-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+}
+
+/* Tooltip Styles */
+.tooltip-container {
+  @apply relative inline-block;
+}
+
+.tooltip-trigger {
+  @apply flex items-center gap-1 cursor-help;
+}
+
+.tooltip-icon {
+  @apply w-3.5 h-3.5 text-doom-primary/60 hover:text-doom-primary transition-colors flex-shrink-0;
+}
+
+.tooltip-popup {
+  @apply absolute z-50 px-3 py-2.5 text-xs leading-relaxed text-white bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-xl max-w-xs;
+  @apply top-full left-1/2 -translate-x-1/2 mt-2;
+  @apply whitespace-normal break-words;
+  @apply border border-gray-700;
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+/* Tooltip arrow */
+.tooltip-popup::before {
+  content: "";
+  @apply absolute bottom-full left-1/2 -translate-x-1/2;
+  @apply border-4 border-transparent border-b-gray-900/95;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 5px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+
 /* Collapsible Instructions */
 .instructions-container {
-  @apply bg-doom-surface/50 rounded-xl border border-doom-primary/20 overflow-hidden;
+  @apply bg-doom-surface/50 rounded-xl border border-doom-primary/20 overflow-hidden max-w-full;
 }
 
 .instructions-toggle {
@@ -137,37 +197,94 @@
   }
 
   .control-buttons-horizontal button {
-    @apply justify-center;
+    @apply justify-center text-xs;
+    padding: 0.5rem 0.75rem;
   }
 
+  /* Camera adjustments - Increased height for full body visibility */
+  .camera-container {
+    min-height: 60vh;
+    height: 65vh;
+    max-height: 70vh;
+  }
+
+  /* Metrics bar - wrap pills on mobile */
   .metrics-bar {
-    @apply grid grid-cols-2 gap-2;
+    @apply gap-2 p-3;
   }
 
   .metric-pill {
-    @apply justify-center;
+    @apply px-3 py-2 text-xs;
   }
 
-  .camera-container .aspect-video {
-    min-height: 50vh;
+  .metric-value {
+    @apply text-sm;
+  }
+
+  /* Mobile tooltip adjustments */
+  .tooltip-popup {
+    @apply left-1/2 -translate-x-1/2;
+    max-width: calc(100vw - 3rem);
+  }
+
+  .tooltip-popup::before {
+    @apply left-1/2 -translate-x-1/2;
+  }
+
+  /* Ensure buttons stay within bounds on small screens */
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline {
+    min-width: 0;
+    white-space: nowrap;
+  }
+}
+
+/* Additional constraint for very small screens */
+@media (max-width: 480px) {
+  .control-buttons-horizontal button {
+    font-size: 0.65rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .control-buttons-horizontal button span {
+    display: none;
+  }
+
+  .control-buttons-horizontal button svg {
+    width: 1rem;
+    height: 1rem;
   }
 }
 
 /* Tablet Responsive */
-@media (min-width: 641px) and (max-width: 1024px) {
+@media (min-width: 641px) and (max-width: 1023px) {
   .control-buttons-horizontal {
     @apply flex-wrap;
   }
 
-  .camera-container .aspect-video {
+  .camera-container {
     min-height: 65vh;
+    height: 70vh;
+    max-height: 75vh;
+  }
+}
+
+/* Desktop - Larger Camera for full body visibility */
+@media (min-width: 1024px) {
+  .camera-container {
+    min-height: 70vh;
+    height: 75vh;
+    max-height: 80vh;
   }
 }
 
 /* Large Screen Optimization */
 @media (min-width: 1280px) {
-  .camera-container .aspect-video {
-    max-height: 70vh;
+  .camera-container {
+    min-height: 75vh;
+    height: 78vh;
+    max-height: 82vh;
   }
 }
 
@@ -197,12 +314,8 @@
 }
 
 /* Hover effects */
-.metric-pill {
-  @apply transition-all duration-200;
-}
-
 .metric-pill:hover {
-  @apply transform scale-105 border-doom-primary/60;
+  @apply transition-all duration-200;
 }
 
 /* Loading and disabled states */
@@ -220,5 +333,358 @@
 
   .btn-outline {
     @apply border-2;
+  }
+
+  .camera-container {
+    @apply border-2;
+  }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  @apply bg-doom-surface border-2 border-doom-primary/30 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.modal-header {
+  @apply flex items-center justify-between p-6 border-b border-doom-primary/20 bg-doom-bg/50;
+}
+
+.modal-title {
+  @apply text-2xl font-bold text-doom-text;
+}
+
+.modal-close {
+  @apply flex items-center justify-center w-8 h-8 text-doom-muted hover:text-doom-primary hover:bg-doom-primary/10 rounded-lg transition-colors;
+}
+
+.modal-body {
+  @apply p-6 overflow-y-auto max-h-[calc(85vh-88px)];
+}
+
+.modal-section-title {
+  @apply text-lg font-semibold text-doom-primary mb-3 mt-5 first:mt-0;
+}
+
+.instructions-list {
+  @apply space-y-2 text-sm text-doom-muted;
+}
+
+.instructions-list li {
+  @apply flex items-start pl-1;
+}
+
+.instructions-list li::before {
+  content: "•";
+  @apply text-doom-primary mr-3 font-bold text-lg flex-shrink-0;
+}
+
+.instructions-list li strong {
+  @apply text-doom-text font-semibold;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile modal adjustments */
+@media (max-width: 640px) {
+  .modal-content {
+    @apply max-w-full mx-2 max-h-[90vh];
+  }
+
+  .modal-header {
+    @apply p-4;
+  }
+
+  .modal-title {
+    @apply text-xl;
+  }
+
+  .modal-body {
+    @apply p-4 max-h-[calc(90vh-80px)];
+  }
+
+  .modal-section-title {
+    @apply text-base;
+  }
+
+  .instructions-list {
+    @apply text-xs;
+  }
+}
+
+/* Form Analysis Panel - Enhanced Graphical Design */
+.form-analysis-panel {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 200px;
+  max-width: 240px;
+  z-index: 20;
+}
+
+/* Individual Metric Card */
+.metric-card {
+  position: relative;
+  padding: 0.875rem;
+  border-radius: 0.75rem;
+  border: 2px solid;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05));
+  pointer-events: none;
+}
+
+/* Metric Header - Icon + Label/Value */
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.625rem;
+  position: relative;
+  z-index: 1;
+}
+
+.metric-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.metric-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.metric-label-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1;
+}
+
+.metric-percentage {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: -0.02em;
+}
+
+.metric-phase-value {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Progress Bar Container */
+.progress-bar-container {
+  position: relative;
+  width: 100%;
+  height: 0.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 0.25rem;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 0.25rem;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Phase Card Special Styling */
+.phase-card {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 0, 0, 0.5)) !important;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(0, 217, 255, 0.6);
+    transform: scale(1.02);
+  }
+}
+
+/* Hover Effects */
+.metric-card:hover {
+  transform: scale(1.03);
+  filter: brightness(1.1);
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .form-analysis-panel {
+    min-width: 160px;
+    max-width: 180px;
+    gap: 0.5rem;
+    right: 0.25rem;
+  }
+
+  .metric-card {
+    padding: 0.625rem;
+  }
+
+  .metric-header {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .metric-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .metric-label-text {
+    font-size: 0.625rem;
+  }
+
+  .metric-percentage {
+    font-size: 1.125rem;
+  }
+
+  .metric-phase-value {
+    font-size: 0.875rem;
+  }
+
+  .progress-bar-container {
+    height: 0.375rem;
+  }
+}
+
+/* Tablet Responsive */
+@media (min-width: 641px) and (max-width: 1023px) {
+  .form-analysis-panel {
+    min-width: 180px;
+    max-width: 200px;
+  }
+
+  .metric-icon {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+
+  .metric-percentage {
+    font-size: 1.375rem;
+  }
+}
+
+/* Large Screen Optimization */
+@media (min-width: 1280px) {
+  .form-analysis-panel {
+    min-width: 220px;
+    max-width: 260px;
+    gap: 1rem;
+  }
+
+  .metric-card {
+    padding: 1rem;
+  }
+
+  .metric-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .metric-percentage {
+    font-size: 1.75rem;
+  }
+
+  .metric-phase-value {
+    font-size: 1.125rem;
+  }
+
+  .progress-bar-container {
+    height: 0.625rem;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .metric-card {
+    border-width: 3px;
+  }
+
+  .progress-bar-container {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .metric-card,
+  .progress-bar-fill,
+  .metric-card:hover {
+    transition: none;
+  }
+
+  .progress-bar-fill::after {
+    animation: none;
+  }
+
+  .phase-card {
+    animation: none !important;
   }
 }

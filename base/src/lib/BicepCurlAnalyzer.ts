@@ -8,6 +8,7 @@
  *    - ESH angle: elbow→shoulder→hip angle (vertical alignment, matching JS implementation)
  * 3. Full body visibility
  * 4. Proper rep counting based on elbow flexion
+ * 5. Leg bending detection
  */
 
 export interface PoseLandmark {
@@ -30,6 +31,18 @@ export interface BicepCurlMetrics {
   // Additional metrics for detailed analysis
   eshAngles?: { left: number; right: number }; // Elbow-Shoulder-Hip angles (vertical alignment)
   armBodyAngles?: { left: number; right: number }; // Arm-body angles (directional alignment)
+  formValidation?: {
+    leftArmScore: number;
+    rightArmScore: number;
+    leftLegScore: number;
+    rightLegScore: number;
+  };
+  // Leg bending detection
+  legBending?: {
+    hasLegBend: boolean;
+    leftKneeAngle: number;
+    rightKneeAngle: number;
+  };
 }
 
 export interface PostureAnalysis {
@@ -48,6 +61,12 @@ export interface ArmPositionAnalysis {
   issues: string[];
 }
 
+export interface CameraDistanceCheck {
+  isTooClose: boolean;
+  bodyHeightRatio: number;
+  feedback: string;
+}
+
 export class BicepCurlAnalyzer {
   private repCount: number = 0;
   private lastAngle: { left: number; right: number } = { left: 180, right: 180 };
@@ -60,8 +79,10 @@ export class BicepCurlAnalyzer {
   private readonly MAX_ANGLE_UP = 30;    // Arm fully flexed (realistic threshold)
   private readonly ARM_BODY_MAX_ANGLE = 15; // Max angle between arm and body (close to 0)
   private readonly ESH_MAX_ANGLE = 30; // Max elbow-shoulder-hip angle (vertical alignment)
+  private readonly LEG_BEND_MIN_ANGLE = 160; // Hip-knee-ankle angle should be >= 160 (nearly straight leg)
   private readonly MIN_VISIBILITY = 0.5; // Minimum landmark visibility
   private readonly BACK_STRAIGHT_THRESHOLD = 170; // Shoulder-hip-knee angle for straight back
+  private readonly MAX_BODY_HEIGHT_RATIO = 0.8; // Max body height in frame (user too close if exceeded)
 
   // MediaPipe Pose landmark indices
   private readonly LANDMARKS = {
@@ -108,6 +129,40 @@ export class BicepCurlAnalyzer {
   }
 
   /**
+   * Check for leg bending during exercise (both legs should be straight)
+   * Calculates hip-knee-ankle angle for both legs
+   */
+  private checkLegBending(landmarks: PoseLandmark[], feedback: string[]): {
+    hasLegBend: boolean;
+    leftKneeAngle: number;
+    rightKneeAngle: number;
+  } {
+    const leftKneeAngle = Math.abs(Math.round(this.calculateAngle(
+      landmarks[this.LANDMARKS.LEFT_HIP],
+      landmarks[this.LANDMARKS.LEFT_KNEE],
+      landmarks[this.LANDMARKS.LEFT_ANKLE]
+    )));
+    
+    const rightKneeAngle = Math.abs(Math.round(this.calculateAngle(
+      landmarks[this.LANDMARKS.RIGHT_HIP],
+      landmarks[this.LANDMARKS.RIGHT_KNEE],
+      landmarks[this.LANDMARKS.RIGHT_ANKLE]
+    )));
+
+    const hasLegBend = leftKneeAngle < this.LEG_BEND_MIN_ANGLE || rightKneeAngle < this.LEG_BEND_MIN_ANGLE;
+    
+    if (hasLegBend) {
+      feedback.push(`Don't bend your legs (left: ${leftKneeAngle}, right: ${rightKneeAngle}, min: ${this.LEG_BEND_MIN_ANGLE})`);
+    }
+
+    return {
+      hasLegBend,
+      leftKneeAngle,
+      rightKneeAngle,
+    };
+  }
+
+  /**
    * Main analysis function - call this with each frame's landmarks
    */
   analyze(landmarks: PoseLandmark[]): BicepCurlMetrics {
@@ -129,37 +184,34 @@ export class BicepCurlAnalyzer {
       };
     }
 
-    // 2. Check posture (straight back and head alignment)
+    // 2. Check camera distance (user too close to camera?)
+    const distanceCheck = this.checkCameraDistance(landmarks);
+    if (distanceCheck.isTooClose) {
+      feedback.push(distanceCheck.feedback);
+    }
+
+    // 3. Check posture (straight back and head alignment)
     const postureAnalysis = this.analyzePosture(landmarks);
     if (!postureAnalysis.isPostureStraight) {
       feedback.push(...postureAnalysis.issues);
     }
 
-    // 3. Check arm position (should be close to body)
+    // 4. Check arm position (should be close to body)
     const armPositionAnalysis = this.analyzeArmPosition(landmarks);
     if (!armPositionAnalysis.isArmCloseToBody) {
       feedback.push(...armPositionAnalysis.issues);
     }
 
-    // 4. Calculate elbow angles for rep counting
+    // 4a. Leg bend check
+    const legBendingData = this.checkLegBending(landmarks, feedback);
+
+    // 5. Calculate elbow angles for rep counting
     const leftShoulder = landmarks[this.LANDMARKS.LEFT_SHOULDER];
     const leftElbow = landmarks[this.LANDMARKS.LEFT_ELBOW];
     const leftWrist = landmarks[this.LANDMARKS.LEFT_WRIST];
     const rightShoulder = landmarks[this.LANDMARKS.RIGHT_SHOULDER];
     const rightElbow = landmarks[this.LANDMARKS.RIGHT_ELBOW];
     const rightWrist = landmarks[this.LANDMARKS.RIGHT_WRIST];
-
-    // Debug: Log landmark positions
-    this.log(
-      `LEFT - Shoulder: (${leftShoulder.x.toFixed(3)}, ${leftShoulder.y.toFixed(3)}) | ` +
-      `Elbow: (${leftElbow.x.toFixed(3)}, ${leftElbow.y.toFixed(3)}) | ` +
-      `Wrist: (${leftWrist.x.toFixed(3)}, ${leftWrist.y.toFixed(3)})`
-    );
-    this.log(
-      `RIGHT - Shoulder: (${rightShoulder.x.toFixed(3)}, ${rightShoulder.y.toFixed(3)}) | ` +
-      `Elbow: (${rightElbow.x.toFixed(3)}, ${rightElbow.y.toFixed(3)}) | ` +
-      `Wrist: (${rightWrist.x.toFixed(3)}, ${rightWrist.y.toFixed(3)})`
-    );
 
     const leftElbowAngle = this.calculateAngle(
       leftShoulder,
@@ -173,60 +225,56 @@ export class BicepCurlAnalyzer {
       rightWrist
     );
 
-    // 5. Rep counting logic (using the better visible arm)
+    // 6. Rep counting logic (using the better visible arm)
     const avgAngle = (leftElbowAngle + rightElbowAngle) / 2;
 
-    // Log angles and current state
-    this.log(
-      `Left: ${Math.round(leftElbowAngle)}° | Right: ${Math.round(rightElbowAngle)}° | ` +
-      `Avg: ${Math.round(avgAngle)}° | Phase: ${this.phase} | Reps: ${this.repCount}`
-    );
+    // Calculate isInValidPosition early for rep counting
+    const postureCheck = postureAnalysis.isPostureStraight;
+    const armCheck = armPositionAnalysis.isArmCloseToBody;
+    const visCheck = visibilityCheck.isVisible;
+    const distCheck = !distanceCheck.isTooClose;
+    const legCheck = !legBendingData.hasLegBend;
+    const isInValidPositionEarly = postureCheck && armCheck && visCheck && distCheck && legCheck;
 
-    this.updateRepCount(avgAngle, feedback);
+    this.updateRepCount(avgAngle, feedback, isInValidPositionEarly);
 
-    // 6. Calculate scores
+    // 7. Calculate scores
     const postureScore = this.calculatePostureScore(postureAnalysis);
     const armPositionScore = this.calculateArmPositionScore(armPositionAnalysis);
     const visibilityScore = visibilityCheck.score;
-    const formScore = (postureScore + armPositionScore + visibilityScore) / 3;
 
-    // Log scores and posture details
-    this.log(
-      `Scores - Form: ${Math.round(formScore)}% | Posture: ${Math.round(postureScore)}% | ` +
-      `Arm Position: ${Math.round(armPositionScore)}% | Visibility: ${Math.round(visibilityScore)}%`
-    );
+    // Reduce form score if user is too close to camera
+    let formScore = (postureScore + armPositionScore + visibilityScore) / 3;
+    if (distanceCheck.isTooClose) {
+      formScore = Math.max(0, formScore - 20);
+    }
 
-    this.log(
-      `Posture - Back Angle: ${Math.round(postureAnalysis.backAngle)}° | ` +
-      `Head Alignment: ${postureAnalysis.headAlignment.toFixed(2)}%`
-    );
+    // Reduce form score if legs are bent
+    if (legBendingData.hasLegBend) {
+      formScore = Math.max(0, formScore - 15);
+    }
 
-    this.log(
-      `Arm Position - Left Arm-Body: ${Math.round(armPositionAnalysis.leftArmBodyAngle)}° | ` +
-      `Right Arm-Body: ${Math.round(armPositionAnalysis.rightArmBodyAngle)}° | ` +
-      `Left ESH: ${armPositionAnalysis.leftESH}° | ` +
-      `Right ESH: ${armPositionAnalysis.rightESH}°`
-    );
-
-    // 7. Check if in valid starting position
+    // 8. Check if in valid starting position
     const isInValidPosition =
       postureAnalysis.isPostureStraight &&
       armPositionAnalysis.isArmCloseToBody &&
-      visibilityCheck.isVisible;
+      visibilityCheck.isVisible &&
+      !distanceCheck.isTooClose &&
+      !legBendingData.hasLegBend;
 
-    // 8. Add form feedback
+    // 9. Add form feedback
     if (formScore < 70) {
       feedback.push("⚠️ Improve form for better results");
     } else if (formScore >= 90) {
       feedback.push("✅ Excellent form!");
     }
 
-    // Log feedback messages if any
-    if (feedback.length > 0) {
-      this.log(`Feedback: ${feedback.join(' | ')}`);
-    }
-
     this.lastAngle = { left: leftElbowAngle, right: rightElbowAngle };
+
+    const leftArmScore = armPositionAnalysis.leftESH <= this.ESH_MAX_ANGLE ? 100 : 0;
+    const rightArmScore = armPositionAnalysis.rightESH <= this.ESH_MAX_ANGLE ? 100 : 0;
+    const leftLegScore = legBendingData.leftKneeAngle >= this.LEG_BEND_MIN_ANGLE ? 100 : 0;
+    const rightLegScore = legBendingData.rightKneeAngle >= this.LEG_BEND_MIN_ANGLE ? 100 : 0;
 
     return {
       repCount: this.repCount,
@@ -246,6 +294,45 @@ export class BicepCurlAnalyzer {
         left: Math.round(armPositionAnalysis.leftArmBodyAngle),
         right: Math.round(armPositionAnalysis.rightArmBodyAngle),
       },
+      formValidation: {
+        leftArmScore,
+        rightArmScore,
+        leftLegScore,
+        rightLegScore,
+      },
+      legBending: legBendingData,
+    };
+  }
+
+  /**
+   * Check camera distance - warn if user is too close to camera
+   */
+  private checkCameraDistance(landmarks: PoseLandmark[]): CameraDistanceCheck {
+    const nose = landmarks[this.LANDMARKS.NOSE];
+    const leftAnkle = landmarks[this.LANDMARKS.LEFT_ANKLE];
+    const rightAnkle = landmarks[this.LANDMARKS.RIGHT_ANKLE];
+
+    // Check if required landmarks are visible
+    if (!nose || !leftAnkle || !rightAnkle) {
+      return {
+        isTooClose: false,
+        bodyHeightRatio: 0,
+        feedback: "",
+      };
+    }
+
+    // Calculate body height in frame (head to ankles)
+    const headY = nose.y;
+    const avgAnkleY = (leftAnkle.y + rightAnkle.y) / 2;
+    const bodyHeightInFrame = Math.abs(avgAnkleY - headY);
+
+    // If body height exceeds threshold, user is too close
+    const isTooClose = bodyHeightInFrame > this.MAX_BODY_HEIGHT_RATIO;
+
+    return {
+      isTooClose,
+      bodyHeightRatio: bodyHeightInFrame,
+      feedback: isTooClose ? "📏 Please move back so your full body is visible" : "",
     };
   }
 
@@ -305,12 +392,10 @@ export class BicepCurlAnalyzer {
 
   /**
    * Analyze posture - back and head should be straight
-   * Uses shoulder-hip-knee angle like the JavaScript implementation
    */
   private analyzePosture(landmarks: PoseLandmark[]): PostureAnalysis {
     const issues: string[] = [];
 
-    // Get landmarks
     const leftShoulder = landmarks[this.LANDMARKS.LEFT_SHOULDER];
     const rightShoulder = landmarks[this.LANDMARKS.RIGHT_SHOULDER];
     const leftHip = landmarks[this.LANDMARKS.LEFT_HIP];
@@ -319,24 +404,20 @@ export class BicepCurlAnalyzer {
     const rightKnee = landmarks[this.LANDMARKS.RIGHT_KNEE];
     const nose = landmarks[this.LANDMARKS.NOSE];
 
-    // Calculate shoulder-hip-knee angle (right side) - for back straightness
     const rightBackAngle = this.calculateAngle(
       rightShoulder,
       rightHip,
       rightKnee
     );
 
-    // Calculate shoulder-hip-knee angle (left side) - for symmetry
     const leftBackAngle = this.calculateAngle(
       leftShoulder,
       leftHip,
       leftKnee
     );
 
-    // Average back angle
     const backAngle = (rightBackAngle + leftBackAngle) / 2;
 
-    // Mid-shoulder point for head alignment check
     const midShoulder = {
       x: (leftShoulder.x + rightShoulder.x) / 2,
       y: (leftShoulder.y + rightShoulder.y) / 2,
@@ -344,20 +425,18 @@ export class BicepCurlAnalyzer {
       visibility: 1,
     };
 
-    // Head alignment (nose should be centered above shoulders)
-    const headAlignment = Math.abs((nose.x - midShoulder.x) * 100); // As percentage
+    const headAlignment = Math.abs((nose.x - midShoulder.x) * 100);
 
-    // Back should be straight: shoulder-hip-knee angle > 170 degrees
     const isPostureStraight =
       backAngle >= this.BACK_STRAIGHT_THRESHOLD &&
       headAlignment <= 10;
 
     if (backAngle < this.BACK_STRAIGHT_THRESHOLD) {
-      issues.push(`📐 Stand straighter - back angle: ${Math.round(backAngle)}° (need ${this.BACK_STRAIGHT_THRESHOLD}°)`);
+      issues.push(`📐 Stand straighter - back angle: ${Math.round(backAngle)}`);
     }
 
     if (headAlignment > 10) {
-      issues.push(`👤 Keep your head centered - offset: ${headAlignment.toFixed(1)}%`);
+      issues.push(`👤 Keep your head centered`);
     }
 
     return {
@@ -370,56 +449,46 @@ export class BicepCurlAnalyzer {
 
   /**
    * Analyze arm position - arms should be close to body
-   * Includes both arm-body angle and ESH (elbow-shoulder-hip) angle validation
    */
   private analyzeArmPosition(landmarks: PoseLandmark[]): ArmPositionAnalysis {
     const issues: string[] = [];
 
-    // Left arm-body angle (using arctan2 method)
     const leftArmBodyAngle = this.calculateArmBodyAngle(
       landmarks[this.LANDMARKS.LEFT_SHOULDER],
       landmarks[this.LANDMARKS.LEFT_ELBOW],
       landmarks[this.LANDMARKS.LEFT_HIP]
     );
 
-    // Right arm-body angle (using arctan2 method)
     const rightArmBodyAngle = this.calculateArmBodyAngle(
       landmarks[this.LANDMARKS.RIGHT_SHOULDER],
       landmarks[this.LANDMARKS.RIGHT_ELBOW],
       landmarks[this.LANDMARKS.RIGHT_HIP]
     );
 
-    // Left ESH angle: elbow → shoulder → hip (angle AT the shoulder)
-    // This matches the JavaScript implementation: calculate_angle(lelbow, lshoulder, lhip)
     const leftESH = Math.abs(Math.round(this.calculateAngle(
-      landmarks[this.LANDMARKS.LEFT_ELBOW],   // Point A
-      landmarks[this.LANDMARKS.LEFT_SHOULDER], // Point B (vertex)
-      landmarks[this.LANDMARKS.LEFT_HIP]       // Point C
+      landmarks[this.LANDMARKS.LEFT_ELBOW],
+      landmarks[this.LANDMARKS.LEFT_SHOULDER],
+      landmarks[this.LANDMARKS.LEFT_HIP]
     )));
 
-    // Right ESH angle: elbow → shoulder → hip (angle AT the shoulder)
-    // This matches the JavaScript implementation: calculate_angle(relbow, rshoulder, rhip)
     const rightESH = Math.abs(Math.round(this.calculateAngle(
-      landmarks[this.LANDMARKS.RIGHT_ELBOW],   // Point A
-      landmarks[this.LANDMARKS.RIGHT_SHOULDER], // Point B (vertex)
-      landmarks[this.LANDMARKS.RIGHT_HIP]       // Point C
+      landmarks[this.LANDMARKS.RIGHT_ELBOW],
+      landmarks[this.LANDMARKS.RIGHT_SHOULDER],
+      landmarks[this.LANDMARKS.RIGHT_HIP]
     )));
 
-    // Validation: arms should be close to body
     const isArmCloseToBody =
       leftArmBodyAngle <= this.ARM_BODY_MAX_ANGLE &&
       rightArmBodyAngle <= this.ARM_BODY_MAX_ANGLE &&
       leftESH <= this.ESH_MAX_ANGLE &&
       rightESH <= this.ESH_MAX_ANGLE;
 
-    // Provide feedback for arm-body angle
     if (leftArmBodyAngle > this.ARM_BODY_MAX_ANGLE || rightArmBodyAngle > this.ARM_BODY_MAX_ANGLE) {
-      issues.push(`💪 Keep elbows closer - left: ${Math.round(leftArmBodyAngle)}°, right: ${Math.round(rightArmBodyAngle)}° (max ${this.ARM_BODY_MAX_ANGLE}°)`);
+      issues.push(`💪 Keep elbows closer`);
     }
 
-    // Provide feedback for ESH angle (vertical alignment)
     if (leftESH > this.ESH_MAX_ANGLE || rightESH > this.ESH_MAX_ANGLE) {
-      issues.push(`💪 Keep elbows in line with shoulders - Left ESH: ${leftESH}°, Right ESH: ${rightESH}° (max ${this.ESH_MAX_ANGLE}°)`);
+      issues.push(`💪 Keep elbows in line with shoulders`);
     }
 
     return {
@@ -433,17 +502,7 @@ export class BicepCurlAnalyzer {
   }
 
   /**
-   * Calculate angle between arm and body using arctan2 method
-   *
-   * This calculates the angle between two lines:
-   * - Body line (shoulder to hip)
-   * - Arm line (shoulder to elbow)
-   *
-   * Returns the angle in degrees (0 = arm perfectly aligned with body)
-   *
-   * NOTE: This is DIFFERENT from the ESH angle (elbow-shoulder-hip).
-   * - This method: Measures the angle between two LINE DIRECTIONS
-   * - ESH angle: Measures the angle AT THE SHOULDER JOINT between three points
+   * Calculate angle between arm and body
    */
   private calculateArmBodyAngle(
     shoulder: PoseLandmark,
@@ -451,23 +510,19 @@ export class BicepCurlAnalyzer {
     hip: PoseLandmark
   ): number {
     if (!shoulder || !elbow || !hip) {
-      return 0; // Return 0 if points are missing (treat as valid)
+      return 0;
     }
 
-    // Calculate angle using arctan2 method
     const radians =
       Math.atan2(elbow.y - shoulder.y, elbow.x - shoulder.x) -
       Math.atan2(hip.y - shoulder.y, hip.x - shoulder.x);
 
     let angle = Math.abs(radians * (180 / Math.PI));
 
-    // Normalize angle to 0-180 range
     if (angle > 180.0) {
       angle = 360 - angle;
     }
 
-    // We want the acute angle (0-90 degrees)
-    // If angle > 90, it means the arm is on the opposite side
     if (angle > 90) {
       angle = 180 - angle;
     }
@@ -476,84 +531,52 @@ export class BicepCurlAnalyzer {
   }
 
   /**
-   * Calculate angle between three points (e.g., shoulder-elbow-wrist)
-   * Uses arctan2 method similar to the Python implementation
-   *
-   * @param a - First point (e.g., shoulder)
-   * @param b - Middle point (e.g., elbow) - the vertex of the angle
-   * @param c - Third point (e.g., wrist)
-   * @returns Angle in degrees
+   * Calculate angle between three points
    */
   private calculateAngle(
     a: PoseLandmark,
     b: PoseLandmark,
     c: PoseLandmark
   ): number {
-    // Handle missing or invalid points
     if (!a || !b || !c) {
-      this.log("⚠️ Missing landmarks for angle calculation, returning 180°");
-      return 180; // Return neutral angle if points are missing
+      return 180;
     }
 
-    // Calculate vectors from elbow (b) to shoulder (a) and wrist (c)
-    const vec1 = { x: a.x - b.x, y: a.y - b.y };
-    const vec2 = { x: c.x - b.x, y: c.y - b.y };
-
-    // Calculate angle using arctan2 (same as Python implementation)
     const angle1 = Math.atan2(a.y - b.y, a.x - b.x);
     const angle2 = Math.atan2(c.y - b.y, c.x - b.x);
     const radians = angle2 - angle1;
 
     let angle = Math.abs(radians * (180 / Math.PI));
 
-    // Normalize angle to 0-180 range
     if (angle > 180.0) {
       angle = 360 - angle;
     }
-
-    // Debug: Log angle calculation details
-    this.log(
-      `Angle calc - vec1: (${vec1.x.toFixed(3)}, ${vec1.y.toFixed(3)}) | ` +
-      `vec2: (${vec2.x.toFixed(3)}, ${vec2.y.toFixed(3)}) | ` +
-      `angle1: ${(angle1 * 180 / Math.PI).toFixed(1)}° | ` +
-      `angle2: ${(angle2 * 180 / Math.PI).toFixed(1)}° | ` +
-      `result: ${angle.toFixed(1)}°`
-    );
 
     return angle;
   }
 
   /**
    * Update rep count based on elbow angle changes
-   * Matches JavaScript implementation logic:
-   * - Down position: angle > 160
-   * - Up position: angle < 30 (and previous stage was "down")
    */
-  private updateRepCount(currentAngle: number, feedback: string[]): void {
+  private updateRepCount(currentAngle: number, feedback: string[], isInValidPosition: boolean): void {
     const previousPhase = this.phase;
 
-    // Down position: arms extended (angle > 160)
     if (currentAngle > this.MIN_ANGLE_DOWN) {
       this.phase = 'down';
       this.repStarted = true;
+    }
 
-      // Log phase transition
-      if (previousPhase !== 'down') {
-        this.log(`>>> PHASE TRANSITION: ${previousPhase} -> down | Angle: ${Math.round(currentAngle)}°`);
+    if (currentAngle < this.MAX_ANGLE_UP && this.phase === 'down' && this.repStarted) {
+      this.phase = 'up';
+
+      if (isInValidPosition) {
+        this.repCount++;
+        feedback.push(`✅ Rep ${this.repCount} completed!`);
+      } else {
+        feedback.push("⚠️ Rep not counted - fix your form");
       }
     }
 
-    // Up position: arms flexed (angle < 30) AND previous stage was "down"
-    if (currentAngle < this.MAX_ANGLE_UP && this.phase === 'down' && this.repStarted) {
-      this.phase = 'up';
-      this.repCount++;
-      feedback.push(`✅ Rep ${this.repCount} completed!`);
-
-      // Log rep completion prominently
-      this.log(`🎉 REP COUNTED! Rep #${this.repCount} | Angle: ${Math.round(currentAngle)}° | TRANSITION: down -> up`);
-    }
-
-    // Provide real-time phase feedback
     if (this.repStarted) {
       if (this.phase === 'down' && currentAngle < this.MIN_ANGLE_DOWN && currentAngle > this.MAX_ANGLE_UP + 20) {
         feedback.push("⬆️ Keep curling up");
@@ -569,15 +592,12 @@ export class BicepCurlAnalyzer {
 
   /**
    * Calculate posture score (0-100)
-   * Back angle should be >= 170 degrees for good posture
    */
   private calculatePostureScore(postureAnalysis: PostureAnalysis): number {
-    // Back score: closer to 180 is better (perfectly straight)
     const backScore = postureAnalysis.backAngle >= this.BACK_STRAIGHT_THRESHOLD
       ? Math.min(100, ((postureAnalysis.backAngle - this.BACK_STRAIGHT_THRESHOLD) / (180 - this.BACK_STRAIGHT_THRESHOLD)) * 100 + 50)
       : Math.max(0, (postureAnalysis.backAngle / this.BACK_STRAIGHT_THRESHOLD) * 50);
 
-    // Head score: centered above shoulders (headAlignment < 10%)
     const headScore = Math.max(0, 100 - (postureAnalysis.headAlignment / 10) * 50);
 
     return (backScore + headScore) / 2;
