@@ -73,7 +73,7 @@ async function fetchGeminiCandidates(params: DiscoveryParams): Promise<GeminiCan
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelCandidates = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+  const modelCandidates = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-flash-latest"];
 
   const maxProducts = Math.min(Math.max(params.maxProducts || 6, 3), 10);
   const concerns = params.profile.concerns?.join(", ") || "none";

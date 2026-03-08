@@ -26,7 +26,7 @@ export class GeminiAppearanceAnalyzer implements AppearanceAnalyzer {
   providerName = "gemini-fallback";
 
   private genAI;
-  private modelCandidates = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+  private modelCandidates = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-flash-latest"];
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);

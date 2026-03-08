@@ -111,7 +111,7 @@ export class GeminiNutritionClient {
   providerName = "gemini-fallback";
 
   private readonly genAI;
-  private readonly modelCandidates = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+  private readonly modelCandidates = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-flash-latest"];
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
