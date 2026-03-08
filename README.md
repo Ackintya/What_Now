@@ -1,6 +1,16 @@
-# WellBeing App - Exercise Tracker (Feature 1)
+# WellBeing App
 
-A comprehensive wellness app with AI-powered exercise tracking, form analysis, and health insights.
+A comprehensive wellness app with AI-powered exercise tracking, nutrition planning, skin/hair analysis, and unified health insights.
+
+## 📚 Documentation
+
+All detailed documentation is organized in the [`docs/`](./docs/) folder:
+- Project plans and architecture
+- Implementation guides
+- System design documents
+- Updates and logging guides
+
+See [docs/README.md](./docs/README.md) for the complete documentation index.
 
 ## Current Features
 
