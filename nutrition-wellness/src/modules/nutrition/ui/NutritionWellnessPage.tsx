@@ -543,7 +543,7 @@ export function NutritionWellnessPage() {
 
   return (
     <main className="min-h-screen pt-20 pb-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="max-w-[1700px] mx-auto px-2 sm:px-3 lg:px-4 space-y-6">
         <section className="module-card" id="overview">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
             <div>

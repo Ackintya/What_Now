@@ -28,6 +28,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--doom-bg);
   color: var(--doom-text);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+@media (min-width: 1024px) {
+  body {
+    font-size: 17px;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -57,7 +65,7 @@ body {
   }
 
   .module-subtitle {
-    @apply text-doom-muted text-sm sm:text-base;
+    @apply text-doom-muted text-base sm:text-lg;
   }
 
   .btn-primary {
@@ -73,15 +81,15 @@ body {
   }
 
   .input-field {
-    @apply w-full rounded-lg border border-doom-primary/30 bg-doom-bg/60 text-doom-text px-3 py-2 outline-none focus:ring-2 focus:ring-doom-accent/40;
+    @apply w-full rounded-lg border border-doom-primary/30 bg-doom-bg/60 text-doom-text text-base px-3 py-2 outline-none focus:ring-2 focus:ring-doom-accent/40;
   }
 
   .textarea-field {
-    @apply w-full rounded-lg border border-doom-primary/30 bg-doom-bg/60 text-doom-text px-3 py-2 outline-none min-h-20 focus:ring-2 focus:ring-doom-accent/40;
+    @apply w-full rounded-lg border border-doom-primary/30 bg-doom-bg/60 text-doom-text text-base px-3 py-2 outline-none min-h-20 focus:ring-2 focus:ring-doom-accent/40;
   }
 
   .chip {
-    @apply inline-flex items-center rounded-full border border-doom-primary/30 px-3 py-1 text-xs text-doom-text;
+    @apply inline-flex items-center rounded-full border border-doom-primary/30 px-3 py-1 text-sm text-doom-text;
   }
 }
 
