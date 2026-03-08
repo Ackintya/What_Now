@@ -3,7 +3,11 @@ import { getDatabase } from "@/lib/mongodb";
 import type {
   AuthenticDishRequest,
   GeneratedRecipe,
+  NutritionActivityType,
+  NutritionInsightMemory,
+  NutritionInsightSession,
   NutritionProfile,
+  NutritionSessionActivityEvent,
   PantryItem,
   RecipeFilters,
   RecipeLibraryEntry,
@@ -20,6 +24,8 @@ const COLLECTIONS = {
   savedRecipes: "saved_recipes",
   authenticRequests: "authentic_dish_requests",
   insights: "wellness_meal_insights",
+  insightMemory: "nutrition_insight",
+  insightSessions: "nutrition_insight_sessions",
 } as const;
 
 function serializeId<T extends { _id?: unknown }>(doc: T | null): (T & { _id?: string }) | null {
@@ -46,6 +52,53 @@ function toObjectId(value: string): ObjectId {
   }
 
   return new ObjectId(value);
+}
+
+function sanitizeSessionData(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const input = value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+
+  for (const [key, raw] of Object.entries(input)) {
+    if (raw === null || raw === undefined) {
+      continue;
+    }
+
+    if (typeof raw === "string" || typeof raw === "number" || typeof raw === "boolean") {
+      result[key] = raw;
+      continue;
+    }
+
+    if (raw instanceof Date) {
+      result[key] = raw.toISOString();
+      continue;
+    }
+
+    if (Array.isArray(raw)) {
+      const cleaned = raw
+        .map((item) => {
+          if (item === null || item === undefined) return null;
+          if (typeof item === "string" || typeof item === "number" || typeof item === "boolean") return item;
+          if (item instanceof Date) return item.toISOString();
+          if (typeof item === "object") return JSON.stringify(item);
+          return String(item);
+        })
+        .filter((item) => item !== null)
+        .slice(0, 20);
+
+      result[key] = cleaned;
+      continue;
+    }
+
+    if (typeof raw === "object") {
+      result[key] = JSON.stringify(raw);
+    }
+  }
+
+  return result;
 }
 
 export async function getNutritionProfile(userId: string): Promise<(NutritionProfile & { _id?: string }) | null> {
@@ -391,6 +444,209 @@ export async function getLatestInsight(userId: string): Promise<(WellnessMealIns
     .next();
 
   return serializeId(insight as WellnessMealInsight | null) as (WellnessMealInsight & { _id?: string }) | null;
+}
+
+export async function createNutritionInsightMemory(
+  userId: string,
+  insightText: string,
+): Promise<NutritionInsightMemory & { _id?: string }> {
+  const db = await getDatabase();
+  const payload: Omit<NutritionInsightMemory, "_id"> = {
+    user_id: userId,
+    created_at: new Date(),
+    insight_text: insightText,
+  };
+
+  const result = await db.collection(COLLECTIONS.insightMemory).insertOne(payload);
+  return {
+    ...payload,
+    _id: String(result.insertedId),
+  };
+}
+
+export async function getLatestNutritionInsightMemory(
+  userId: string,
+): Promise<(NutritionInsightMemory & { _id?: string }) | null> {
+  const db = await getDatabase();
+  const insight = await db
+    .collection(COLLECTIONS.insightMemory)
+    .find({ user_id: userId })
+    .sort({ created_at: -1 })
+    .limit(1)
+    .next();
+
+  return serializeId(insight as NutritionInsightMemory | null) as (NutritionInsightMemory & { _id?: string }) | null;
+}
+
+export async function listNutritionInsightMemory(
+  userId: string,
+  limit = 20,
+): Promise<Array<NutritionInsightMemory & { _id?: string }>> {
+  const db = await getDatabase();
+  const docs = await db
+    .collection(COLLECTIONS.insightMemory)
+    .find({ user_id: userId })
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .toArray();
+
+  return serializeMany(docs as unknown as NutritionInsightMemory[]) as Array<NutritionInsightMemory & { _id?: string }>;
+}
+
+export async function getActiveNutritionInsightSession(
+  userId: string,
+): Promise<(NutritionInsightSession & { _id?: string }) | null> {
+  const db = await getDatabase();
+  const session = await db
+    .collection(COLLECTIONS.insightSessions)
+    .find({ user_id: userId, status: "active" })
+    .sort({ last_activity_at: -1 })
+    .limit(1)
+    .next();
+
+  return serializeId(session as NutritionInsightSession | null) as (NutritionInsightSession & { _id?: string }) | null;
+}
+
+export async function createNutritionInsightSession(params: {
+  userId: string;
+  event: NutritionSessionActivityEvent;
+}): Promise<NutritionInsightSession & { _id?: string }> {
+  const db = await getDatabase();
+  const now = params.event.at;
+
+  const payload: Omit<NutritionInsightSession, "_id"> = {
+    user_id: params.userId,
+    status: "active",
+    started_at: now,
+    last_activity_at: now,
+    created_at: now,
+    updated_at: now,
+    event_count: 1,
+    action_types: [params.event.action_type],
+    events: [
+      {
+        at: params.event.at,
+        action_type: params.event.action_type,
+        data: sanitizeSessionData(params.event.data),
+      },
+    ],
+  };
+
+  const result = await db.collection(COLLECTIONS.insightSessions).insertOne(payload);
+  return {
+    ...payload,
+    _id: String(result.insertedId),
+  };
+}
+
+export async function appendNutritionInsightSessionEvent(params: {
+  sessionId: string;
+  userId: string;
+  event: NutritionSessionActivityEvent;
+  maxEvents: number;
+}): Promise<(NutritionInsightSession & { _id?: string }) | null> {
+  const db = await getDatabase();
+  const sessionObjectId = toObjectId(params.sessionId);
+  const updateDoc = {
+    $set: {
+      last_activity_at: params.event.at,
+      updated_at: params.event.at,
+    },
+    $inc: {
+      event_count: 1,
+    },
+    $addToSet: {
+      action_types: params.event.action_type,
+    },
+    $push: {
+      events: {
+        $each: [
+          {
+            at: params.event.at,
+            action_type: params.event.action_type,
+            data: sanitizeSessionData(params.event.data),
+          },
+        ],
+        $slice: -Math.max(params.maxEvents, 1),
+      },
+    },
+  };
+
+  await db.collection(COLLECTIONS.insightSessions).updateOne(
+    {
+      _id: sessionObjectId,
+      user_id: params.userId,
+      status: "active",
+    } as any,
+    updateDoc as any,
+  );
+
+  const updated = await db.collection(COLLECTIONS.insightSessions).findOne({ _id: sessionObjectId, user_id: params.userId });
+  return serializeId(updated as NutritionInsightSession | null) as (NutritionInsightSession & { _id?: string }) | null;
+}
+
+export async function markNutritionInsightSessionFinalized(params: {
+  sessionId: string;
+  userId: string;
+  reason: NutritionInsightSession["finalization_reason"];
+  generatedInsightId?: string;
+  generatedInsightText?: string;
+  duplicateOfInsightId?: string;
+}): Promise<(NutritionInsightSession & { _id?: string }) | null> {
+  const db = await getDatabase();
+  const sessionObjectId = toObjectId(params.sessionId);
+  const now = new Date();
+
+  await db.collection(COLLECTIONS.insightSessions).updateOne(
+    { _id: sessionObjectId, user_id: params.userId },
+    {
+      $set: {
+        status: "finalized",
+        finalized_at: now,
+        updated_at: now,
+        finalization_reason: params.reason,
+        generated_insight_id: params.generatedInsightId,
+        generated_insight_text: params.generatedInsightText,
+        duplicate_of_insight_id: params.duplicateOfInsightId,
+      },
+    },
+  );
+
+  const updated = await db.collection(COLLECTIONS.insightSessions).findOne({ _id: sessionObjectId, user_id: params.userId });
+  return serializeId(updated as NutritionInsightSession | null) as (NutritionInsightSession & { _id?: string }) | null;
+}
+
+export async function getNutritionInsightSessionById(
+  sessionId: string,
+): Promise<(NutritionInsightSession & { _id?: string }) | null> {
+  const db = await getDatabase();
+  const session = await db.collection(COLLECTIONS.insightSessions).findOne({ _id: toObjectId(sessionId) });
+  return serializeId(session as NutritionInsightSession | null) as (NutritionInsightSession & { _id?: string }) | null;
+}
+
+export async function listStaleActiveNutritionInsightSessions(params: {
+  staleBefore: Date;
+  limit: number;
+  userId?: string;
+}): Promise<Array<NutritionInsightSession & { _id?: string }>> {
+  const db = await getDatabase();
+  const query: Record<string, unknown> = {
+    status: "active",
+    last_activity_at: { $lte: params.staleBefore },
+  };
+
+  if (params.userId) {
+    query.user_id = params.userId;
+  }
+
+  const sessions = await db
+    .collection(COLLECTIONS.insightSessions)
+    .find(query)
+    .sort({ last_activity_at: 1 })
+    .limit(params.limit)
+    .toArray();
+
+  return serializeMany(sessions as unknown as NutritionInsightSession[]) as Array<NutritionInsightSession & { _id?: string }>;
 }
 
 function recipeMatchesFilters(recipe: GeneratedRecipe, filters: RecipeFilters): boolean {

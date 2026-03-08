@@ -543,17 +543,17 @@ export function NutritionWellnessPage() {
 
   return (
     <main className="min-h-screen pt-20 pb-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="w-full px-1 sm:px-2 lg:px-3 space-y-6">
         <section className="module-card" id="overview">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
             <div>
-              <p className="text-sm text-doom-muted">Hackathon standalone module</p>
+              <p className="text-base text-doom-muted">Hackathon standalone module</p>
               <h1 className="text-2xl sm:text-3xl font-bold text-doom-text">Nutrition Wellness Workspace</h1>
-              <p className="text-sm text-doom-muted mt-2 max-w-3xl">{MODULE_GUARDRAIL_TEXT}</p>
+              <p className="text-base text-doom-muted mt-2 max-w-5xl">{MODULE_GUARDRAIL_TEXT}</p>
             </div>
 
             <div className="w-full lg:w-80">
-              <label className="text-xs text-doom-muted">User ID</label>
+              <label className="text-base text-doom-muted">User ID</label>
               <div className="flex gap-2 mt-1">
                 <input className="input-field" value={userId} onChange={(event) => setUserId(event.target.value)} />
                 <button className="btn-secondary" type="button" onClick={() => void loadAll()}>
@@ -563,7 +563,7 @@ export function NutritionWellnessPage() {
             </div>
           </div>
 
-          {statusMessage ? <p className={`mt-4 rounded-lg border px-3 py-2 text-sm ${statusClass}`}>{statusMessage}</p> : null}
+          {statusMessage ? <p className={`mt-4 rounded-lg border px-3 py-2 text-base ${statusClass}`}>{statusMessage}</p> : null}
         </section>
 
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -601,7 +601,7 @@ export function NutritionWellnessPage() {
                 <button
                   key={section.key}
                   type="button"
-                  className={`w-full flex items-center justify-center px-3 py-3 rounded-lg border text-sm sm:text-base font-medium transition ${
+                  className={`w-full flex items-center justify-center px-3 py-3 rounded-lg border text-base sm:text-base font-medium transition ${
                     isActive
                       ? "border-doom-accent bg-doom-accent/20 text-doom-accent"
                       : "border-doom-primary/30 text-doom-text hover:bg-doom-bg/50"
@@ -629,7 +629,7 @@ export function NutritionWellnessPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs text-doom-muted">Primary goal</label>
+              <label className="text-base text-doom-muted">Primary goal</label>
               <select
                 className="input-field mt-1"
                 value={profileDraft.primary_goal}
@@ -643,7 +643,7 @@ export function NutritionWellnessPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-doom-muted">Protein goal (g/day)</label>
+              <label className="text-base text-doom-muted">Protein goal (g/day)</label>
               <input
                 className="input-field mt-1"
                 type="number"
@@ -652,7 +652,7 @@ export function NutritionWellnessPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-doom-muted">Calorie goal</label>
+              <label className="text-base text-doom-muted">Calorie goal</label>
               <input
                 className="input-field mt-1"
                 type="number"
@@ -731,7 +731,7 @@ export function NutritionWellnessPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {pantryItems.length === 0 ? <span className="text-sm text-doom-muted">No pantry items saved yet.</span> : null}
+            {pantryItems.length === 0 ? <span className="text-base text-doom-muted">No pantry items saved yet.</span> : null}
             {pantryItems.map((item) => (
               <span key={item} className="chip">
                 {item}
@@ -746,7 +746,7 @@ export function NutritionWellnessPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-semibold text-doom-text">{meal.title}</h3>
-                      <p className="text-sm text-doom-muted">{meal.description}</p>
+                      <p className="text-base text-doom-muted">{meal.description}</p>
                     </div>
                     <button
                       type="button"
@@ -758,22 +758,22 @@ export function NutritionWellnessPage() {
                     </button>
                   </div>
 
-                  <p className="text-sm text-doom-text">
+                  <p className="text-base text-doom-text">
                     <strong>Result:</strong> {meal.result}
                   </p>
-                  <p className="text-sm text-doom-text">
+                  <p className="text-base text-doom-text">
                     <strong>Why it fits:</strong> {meal.why_it_fits}
                   </p>
-                  <p className="text-sm text-doom-text">
+                  <p className="text-base text-doom-text">
                     <strong>Confidence:</strong> {meal.confidence}
                   </p>
-                  <p className="text-sm text-doom-accent">
+                  <p className="text-base text-doom-accent">
                     <strong>{meal.also_check}</strong>
                   </p>
 
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-doom-muted mb-1">Ingredients</p>
-                    <ul className="text-sm text-doom-text list-disc pl-5 space-y-1">
+                    <p className="text-base uppercase tracking-wide text-doom-muted mb-1">Ingredients</p>
+                    <ul className="text-base text-doom-text list-disc pl-5 space-y-1">
                       {meal.ingredients.map((ingredient) => (
                         <li key={ingredient}>{ingredient}</li>
                       ))}
@@ -781,8 +781,8 @@ export function NutritionWellnessPage() {
                   </div>
 
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-doom-muted mb-1">Steps</p>
-                    <ol className="text-sm text-doom-text list-decimal pl-5 space-y-1">
+                    <p className="text-base uppercase tracking-wide text-doom-muted mb-1">Steps</p>
+                    <ol className="text-base text-doom-text list-decimal pl-5 space-y-1">
                       {meal.instructions.map((step) => (
                         <li key={step}>{step}</li>
                       ))}
@@ -825,8 +825,8 @@ export function NutritionWellnessPage() {
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
               <article className="rounded-xl border border-doom-primary/20 bg-doom-bg/40 p-4">
                 <h3 className="text-lg font-semibold text-doom-text">Traditional Baseline</h3>
-                <p className="text-sm text-doom-muted mt-2">{authResult.baseline.traditional_summary}</p>
-                <p className="text-xs text-doom-muted mt-3">Source reference: {authResult.baseline.source_reference}</p>
+                <p className="text-base text-doom-muted mt-2">{authResult.baseline.traditional_summary}</p>
+                <p className="text-base text-doom-muted mt-3">Source reference: {authResult.baseline.source_reference}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {authResult.baseline.core_ingredients.map((ingredient) => (
                     <span key={ingredient} className="chip">
@@ -840,7 +840,7 @@ export function NutritionWellnessPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold text-doom-text">{authResult.optimized_recipe.title}</h3>
-                    <p className="text-sm text-doom-muted">{authResult.optimized_recipe.description}</p>
+                    <p className="text-base text-doom-muted">{authResult.optimized_recipe.description}</p>
                   </div>
                   <button
                     type="button"
@@ -852,22 +852,22 @@ export function NutritionWellnessPage() {
                   </button>
                 </div>
 
-                <p className="text-sm text-doom-text">
+                <p className="text-base text-doom-text">
                   <strong>Result:</strong> {authResult.optimized_recipe.result}
                 </p>
-                <p className="text-sm text-doom-text">
+                <p className="text-base text-doom-text">
                   <strong>Why it fits:</strong> {authResult.optimized_recipe.why_it_fits}
                 </p>
-                <p className="text-sm text-doom-text">
+                <p className="text-base text-doom-text">
                   <strong>Confidence:</strong> {authResult.optimized_recipe.confidence}
                 </p>
-                <p className="text-sm text-doom-accent">
+                <p className="text-base text-doom-accent">
                   <strong>{authResult.optimized_recipe.also_check}</strong>
                 </p>
 
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-doom-muted mb-1">What changed</p>
-                  <ul className="text-sm text-doom-text list-disc pl-5 space-y-1">
+                  <p className="text-base uppercase tracking-wide text-doom-muted mb-1">What changed</p>
+                  <ul className="text-base text-doom-text list-disc pl-5 space-y-1">
                     {authResult.change_summary.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
@@ -927,7 +927,7 @@ export function NutritionWellnessPage() {
               onChange={(value) => setLibraryFilters((prev) => ({ ...prev, dietary: value }))}
             />
             <div>
-              <label className="text-xs text-doom-muted">Source type</label>
+              <label className="text-base text-doom-muted">Source type</label>
               <select
                 className="input-field mt-1"
                 value={libraryFilters.sourceType}
@@ -941,7 +941,7 @@ export function NutritionWellnessPage() {
             </div>
           </div>
 
-          <label className="inline-flex items-center gap-2 text-sm text-doom-text mt-3">
+          <label className="inline-flex items-center gap-2 text-base text-doom-text mt-3">
             <input
               type="checkbox"
               checked={libraryFilters.onlySaved}
@@ -950,16 +950,16 @@ export function NutritionWellnessPage() {
             Show saved recipes only
           </label>
 
-          {librarySeeded ? <p className="text-xs text-doom-muted mt-2">Showing seeded demo recipes because your saved library is empty.</p> : null}
+          {librarySeeded ? <p className="text-base text-doom-muted mt-2">Showing seeded demo recipes because your saved library is empty.</p> : null}
 
           <div className="mt-5 space-y-4">
-            {libraryEntries.length === 0 ? <p className="text-sm text-doom-muted">No recipes found for current filters.</p> : null}
+            {libraryEntries.length === 0 ? <p className="text-base text-doom-muted">No recipes found for current filters.</p> : null}
             {libraryEntries.map((entry) => (
               <article key={entry.recipe._id || entry.recipe.title} className="rounded-xl border border-doom-primary/20 bg-doom-bg/40 p-4">
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold text-doom-text">{entry.recipe.title}</h3>
-                    <p className="text-sm text-doom-muted">
+                    <p className="text-base text-doom-muted">
                       Source: {entry.recipe.source_type} {entry.recipe.cuisine ? `| Cuisine: ${entry.recipe.cuisine}` : ""}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -991,7 +991,7 @@ export function NutritionWellnessPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 space-y-1 text-sm text-doom-text">
+                <div className="mt-3 space-y-1 text-base text-doom-text">
                   <p>
                     <strong>Result:</strong> {entry.recipe.result_summary}
                   </p>
@@ -1006,7 +1006,7 @@ export function NutritionWellnessPage() {
                   </p>
                 </div>
 
-                <p className="text-xs text-doom-muted mt-2">Saved tweaks: {entry.modification_count}</p>
+                <p className="text-base text-doom-muted mt-2">Saved tweaks: {entry.modification_count}</p>
 
                 <div className="mt-3 flex flex-col md:flex-row gap-2">
                   <input
@@ -1066,7 +1066,7 @@ export function NutritionWellnessPage() {
               onChange={(value) => setCustomRecipe((prev) => ({ ...prev, cuisine: value }))}
             />
             <div>
-              <label className="text-xs text-doom-muted">Ingredients (one per line)</label>
+              <label className="text-base text-doom-muted">Ingredients (one per line)</label>
               <textarea
                 className="textarea-field mt-1"
                 value={customRecipe.ingredients}
@@ -1074,7 +1074,7 @@ export function NutritionWellnessPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-doom-muted">Instructions (one per line)</label>
+              <label className="text-base text-doom-muted">Instructions (one per line)</label>
               <textarea
                 className="textarea-field mt-1"
                 value={customRecipe.instructions}
@@ -1108,14 +1108,14 @@ export function NutritionWellnessPage() {
             </button>
           </div>
 
-          {insightsSeeded ? <p className="text-xs text-doom-muted mb-3">Showing seeded insight cards for first-run demo context.</p> : null}
+          {insightsSeeded ? <p className="text-base text-doom-muted mb-3">Showing seeded insight cards for first-run demo context.</p> : null}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {insights.length === 0 ? <p className="text-sm text-doom-muted">No insights yet.</p> : null}
+            {insights.length === 0 ? <p className="text-base text-doom-muted">No insights yet.</p> : null}
             {insights.map((insight, index) => (
               <article key={`${insight.insight_type}-${index}`} className="rounded-xl border border-doom-primary/20 bg-doom-bg/40 p-4">
-                <p className="text-xs uppercase tracking-wide text-doom-muted">{insight.insight_type}</p>
-                <p className="text-sm text-doom-text mt-2">{insight.message}</p>
+                <p className="text-base uppercase tracking-wide text-doom-muted">{insight.insight_type}</p>
+                <p className="text-base text-doom-text mt-2">{insight.message}</p>
                 <div className="flex flex-wrap gap-2 mt-3">
                   {insight.related_signals.map((signal) => (
                     <span key={signal} className="chip">
@@ -1123,8 +1123,8 @@ export function NutritionWellnessPage() {
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-doom-muted mt-3">Confidence: {insight.confidence}</p>
-                <p className="text-sm text-doom-accent mt-2">
+                <p className="text-base text-doom-muted mt-3">Confidence: {insight.confidence}</p>
+                <p className="text-base text-doom-accent mt-2">
                   <strong>{insight.grounding_line}</strong>
                 </p>
               </article>
@@ -1151,8 +1151,8 @@ function SummaryCard({
     <div className="module-card">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-wide text-doom-muted">{label}</p>
-          <p className="text-sm sm:text-base text-doom-text mt-2">{loading ? "Loading..." : value}</p>
+          <p className="text-base uppercase tracking-wide text-doom-muted">{label}</p>
+          <p className="text-base sm:text-base text-doom-text mt-2">{loading ? "Loading..." : value}</p>
         </div>
         <div>{icon}</div>
       </div>
@@ -1173,7 +1173,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="text-xs text-doom-muted">{label}</label>
+      <label className="text-base text-doom-muted">{label}</label>
       <input
         className="input-field mt-1"
         value={value}
@@ -1183,3 +1183,4 @@ function Field({
     </div>
   );
 }
+

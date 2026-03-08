@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { createSavedRecipe, removeSavedRecipe } from "@/modules/nutrition/repositories";
+import { createSavedRecipe, getRecipeById, removeSavedRecipe } from "@/modules/nutrition/repositories";
+import { trackNutritionActivitySafely } from "@/modules/nutrition/services/insightMemory";
 
 export async function POST(request: NextRequest, context: { params: { id: string } }) {
   try {
@@ -11,7 +12,21 @@ export async function POST(request: NextRequest, context: { params: { id: string
       return NextResponse.json({ error: "user_id is required" }, { status: 400 });
     }
 
-    const saved = await createSavedRecipe(userId, context.params.id, typeof payload.user_notes === "string" ? payload.user_notes : undefined);
+    const [saved, recipe] = await Promise.all([
+      createSavedRecipe(userId, context.params.id, typeof payload.user_notes === "string" ? payload.user_notes : undefined),
+      getRecipeById(context.params.id, userId),
+    ]);
+
+    await trackNutritionActivitySafely({
+      userId,
+      actionType: "recipe_saved",
+      data: {
+        recipe_id: context.params.id,
+        recipe_title: recipe?.title || "",
+        source_type: recipe?.source_type || "",
+      },
+    });
+
     return NextResponse.json({ success: true, saved });
   } catch (error) {
     console.error("Failed to save recipe:", error);

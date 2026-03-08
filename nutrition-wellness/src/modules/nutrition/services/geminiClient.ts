@@ -1,7 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GROUNDING_LINES } from "../constants";
 import { ensureGroundingLine, enforceWellnessTone } from "../safeText";
-import type { AuthenticBaseline, ConfidenceLevel, NutritionProfile, PantryMealDraft } from "../types";
+import type {
+  AuthenticBaseline,
+  ConfidenceLevel,
+  NutritionProfile,
+  NutritionSessionActivityEvent,
+  PantryMealDraft,
+} from "../types";
 
 const STRICT_NO_HALLUCINATION_RULES = `
 STRICT ANTI-HALLUCINATION RULES:
@@ -78,6 +84,27 @@ function normalizeMeal(payload: Record<string, unknown>): PantryMealDraft {
     confidence: cleanConfidence(payload.confidence),
     also_check: ensureGroundingLine(String(payload.also_check || GROUNDING_LINES.recipe)),
   };
+}
+
+function normalizeInsightText(raw: unknown): string {
+  const text = enforceWellnessTone(String(raw || "").trim())
+    .replace(/\s+/g, " ")
+    .replace(/\n+/g, " ");
+
+  if (!text) {
+    return "";
+  }
+
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  if (sentences.length === 0) {
+    return "";
+  }
+
+  return sentences.slice(0, 4).join(" ");
 }
 
 export class GeminiNutritionClient {
@@ -263,6 +290,48 @@ ${profileContext(params.profile)}
       confidence: cleanConfidence(parsed.confidence),
       also_check: ensureGroundingLine(String(parsed.also_check || GROUNDING_LINES.recipe)),
     };
+  }
+
+  async summarizeNutritionSessionInsight(params: {
+    userId: string;
+    startedAt: Date;
+    endedAt: Date;
+    events: NutritionSessionActivityEvent[];
+  }): Promise<string> {
+    const eventSummary = params.events.map((event) => ({
+      at: event.at instanceof Date ? event.at.toISOString() : String(event.at),
+      action_type: event.action_type,
+      data: event.data,
+    }));
+
+    const prompt = `
+You summarize a nutrition session memory for personalization.
+Do not provide medical advice, diagnosis, or treatment language.
+STRICT: do not hallucinate. Use only the provided event data.
+If uncertain or data is missing, say uncertainty briefly instead of inventing facts.
+
+Return strict JSON:
+{
+  "insight_text": "2 to 4 concise sentences"
+}
+
+Required style:
+- non-medical, non-clinical wording
+- concise session summary of what we learned from actual activity
+- acceptable phrasing includes: high-protein preference, goal-aligned meal pattern, lighter variation, protein-forward recipe style
+- avoid medical certainty wording
+
+Session metadata:
+- user_id: ${params.userId}
+- session_start: ${params.startedAt.toISOString()}
+- session_end: ${params.endedAt.toISOString()}
+
+Session events (source of truth):
+${JSON.stringify(eventSummary, null, 2)}
+`;
+
+    const parsed = await this.generateJson(prompt);
+    return normalizeInsightText(parsed.insight_text);
   }
 }
 

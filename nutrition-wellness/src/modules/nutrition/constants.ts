@@ -1,4 +1,4 @@
-import type { PrimaryGoal, SourceType } from "./types";
+import type { NutritionActivityType, PrimaryGoal, SourceType } from "./types";
 
 export const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEFAULT_USER_ID || "demo-user";
 
@@ -34,4 +34,18 @@ export const BANNED_CLAIMS = [
   "diagnosis",
   "treatment",
   "prescription",
+];
+
+export const NUTRITION_MEMORY_STALE_MINUTES = 15;
+export const NUTRITION_MEMORY_MAX_EVENTS_PER_SESSION = 40;
+export const NUTRITION_MEMORY_DUPLICATE_SIMILARITY_THRESHOLD = 0.88;
+
+export const NUTRITION_MEANINGFUL_ACTIVITY_TYPES: NutritionActivityType[] = [
+  "profile_updated",
+  "recipe_generated",
+  "authentic_optimization_completed",
+  "recipe_saved",
+  "recipe_modified",
+  "custom_recipe_added",
+  "nutrition_insight_generated",
 ];

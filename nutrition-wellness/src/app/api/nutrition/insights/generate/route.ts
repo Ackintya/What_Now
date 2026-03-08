@@ -6,6 +6,7 @@ import {
   getNutritionProfile,
   replaceWellnessInsights,
 } from "@/modules/nutrition/repositories";
+import { trackNutritionActivitySafely } from "@/modules/nutrition/services/insightMemory";
 import { generateWellnessInsights } from "@/modules/nutrition/services/insights";
 import { validateInsightGeneratePayload } from "@/modules/nutrition/validators";
 
@@ -26,6 +27,15 @@ export async function POST(request: NextRequest) {
     });
 
     const saved = await replaceWellnessInsights(validated.user_id, generated);
+
+    await trackNutritionActivitySafely({
+      userId: validated.user_id,
+      actionType: "nutrition_insight_generated",
+      data: {
+        generated_count: generated.length,
+        insight_types: generated.map((item) => item.insight_type).slice(0, 8),
+      },
+    });
 
     return NextResponse.json({ success: true, insights: saved });
   } catch (error) {

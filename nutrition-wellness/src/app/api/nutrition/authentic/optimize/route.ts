@@ -6,6 +6,7 @@ import {
   getNutritionProfile,
 } from "@/modules/nutrition/repositories";
 import { optimizeAuthenticDish } from "@/modules/nutrition/services/authenticOptimizer";
+import { trackNutritionActivitySafely } from "@/modules/nutrition/services/insightMemory";
 import { validateAuthenticOptimizePayload } from "@/modules/nutrition/validators";
 
 export async function POST(request: NextRequest) {
@@ -28,6 +29,18 @@ export async function POST(request: NextRequest) {
       cuisine: validated.cuisine || undefined,
       profile: profile || { user_id: validated.user_id, primary_goal: "general_wellness" },
       optimizationPreferences: validated.optimization_preferences,
+    });
+
+    await trackNutritionActivitySafely({
+      userId: validated.user_id,
+      actionType: "authentic_optimization_completed",
+      data: {
+        query: validated.query,
+        cuisine: validated.cuisine || "",
+        optimization_preferences: validated.optimization_preferences.slice(0, 10),
+        baseline_dish: optimized.result.baseline.dish_name,
+        optimized_recipe_title: optimized.result.optimized_recipe.title,
+      },
     });
 
     return NextResponse.json({
