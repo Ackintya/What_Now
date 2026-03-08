@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, Droplet, Home, UserRound, LogOut } from "lucide-react";
+import { Menu, X, Droplet, Home, Dumbbell, Apple, UtensilsCrossed, UserRound, LogOut } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface User {
@@ -17,7 +17,9 @@ interface NavigationProps {
 
 const menuItems = [
   { name: "Home", href: "http://localhost:3000", icon: Home, color: "text-doom-primary" },
-  { name: "Profile", href: "/profile", icon: UserRound, color: "text-doom-accent" },
+  { name: "Physical Fitness", href: "http://localhost:3000/fitness", icon: Dumbbell, color: "text-doom-primary" },
+  { name: "Nutrition", href: "http://localhost:3003", icon: Apple, color: "text-green-400" },
+  { name: "Find Restaurants", href: "http://localhost:3004", icon: UtensilsCrossed, color: "text-yellow-400" },
 ];
 
 export function Navigation({ user }: NavigationProps) {
@@ -59,13 +61,6 @@ export function Navigation({ user }: NavigationProps) {
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-6">
-              {/* User Greeting */}
-              {user && (
-                <span className="text-sm text-doom-primary font-medium">
-                  Hi, {user.name}
-                </span>
-              )}
-
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -79,6 +74,16 @@ export function Navigation({ user }: NavigationProps) {
                   </a>
                 );
               })}
+
+              {user && (
+                <a
+                  href="http://localhost:3000/profile"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-doom-bg/50 transition-colors text-doom-accent"
+                >
+                  <UserRound className="w-5 h-5" />
+                  <span className="text-sm font-medium text-doom-text">Profile</span>
+                </a>
+              )}
 
               {/* Logout Button */}
               <button

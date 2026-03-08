@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Navigation } from "@/components/Navigation";
+import { FitnessNavigation } from "@/components/FitnessNavigation";
 import { WebcamCapture } from "@/components/WebcamCapture";
 import { BicepCurlAnalyzer, type BicepCurlMetrics } from "@/lib/BicepCurlAnalyzer";
 import { LateralRaisesAnalyzer, type LateralRaisesMetrics } from "@/lib/LateralRaisesAnalyzer";
@@ -581,7 +581,7 @@ export default function FitnessPage() {
 
   return (
     <>
-      {!isExerciseActive && <Navigation user={user} />}
+      {!isExerciseActive && <FitnessNavigation user={user} />}
 
       <main className={`min-h-screen bg-doom-bg ${!isExerciseActive ? 'pt-16' : 'pt-0'} pb-8 max-w-full overflow-x-hidden`}>
         <div className="px-3 sm:px-4 py-4 pb-8 max-w-full">

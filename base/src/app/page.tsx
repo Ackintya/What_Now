@@ -74,7 +74,7 @@ const featureScreens: FeatureScreen[] = [
     mediaSrc: "/assets/nutrition.mp4",
     mediaAlt: "Nutrition feature walkthrough",
     icon: UtensilsCrossed,
-    ctaHref: "/nutrition",
+    ctaHref: "http://localhost:3003",
     ctaLabel: "Explore Nutrition",
   },
   {
@@ -112,6 +112,24 @@ const featureScreens: FeatureScreen[] = [
     icon: Scissors,
     ctaHref: "http://localhost:3002",
     ctaLabel: "Analyse Your Hair",
+  },
+  {
+    id: "restaurants",
+    label: "Find Restaurants",
+    title: "Discover healthy dining options near you",
+    description:
+      "Search for health-focused restaurants, scan meals for nutritional info, and get AI-powered health scores for every dish.",
+    bullets: [
+      "Find restaurants by location, cuisine, and health focus",
+      "AI health scoring for restaurant menus and categories",
+      "Scan food photos for instant nutritional breakdown",
+    ],
+    mediaType: "video",
+    mediaSrc: "/assets/restaurant.mp4",
+    mediaAlt: "Restaurant finder feature walkthrough",
+    icon: UtensilsCrossed,
+    ctaHref: "http://localhost:3004",
+    ctaLabel: "Find Restaurants",
   },
 ];
 

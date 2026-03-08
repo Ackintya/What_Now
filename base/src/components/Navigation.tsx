@@ -27,8 +27,8 @@ interface NavigationProps {
 
 const menuItems: MenuItem[] = [
   { name: "Physical Fitness", href: "/fitness", icon: Dumbbell, color: "text-doom-primary" },
-  { name: "Nutrition", href: "/nutrition", icon: Apple, color: "text-green-400" },
-  { name: "Find Restaurants", href: "/restaurants", icon: UtensilsCrossed, color: "text-yellow-400" },
+  { name: "Nutrition", href: "http://localhost:3003", icon: Apple, color: "text-green-400", external: true },
+  { name: "Find Restaurants", href: "http://localhost:3004", icon: UtensilsCrossed, color: "text-yellow-400", external: true },
   { name: "Skin & Hair Analysis", href: "http://localhost:3002", icon: Droplet, color: "text-blue-400", external: true },
 ];
 
@@ -97,10 +97,10 @@ export function Navigation({ user }: NavigationProps) {
                   <div className="h-8 w-px bg-doom-primary/30" />
 
                   {/* Profile Section */}
-                  <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-doom-bg/30">
+                  <Link href="/profile" className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-doom-bg/30 hover:bg-doom-bg/50 transition-colors">
                     <UserRound className="w-5 h-5 text-doom-primary" />
                     <span className="text-sm font-medium text-doom-text">{user.name}</span>
-                  </div>
+                  </Link>
 
                   {/* Logout Button */}
                   <button

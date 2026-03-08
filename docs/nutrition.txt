@@ -1,0 +1,516 @@
+Build the Nutrition Wellness module
+
+Goal:
+Build a Nutrition Wellness module that helps users:
+1. define protein and broader nutrition goals,
+2. get meal suggestions based on ingredients they already have at home,
+3. receive high-protein meal ideas tailored to their workout context and nutrition needs,
+4. optimize authentic/traditional dishes to better match health or protein goals without completely losing the spirit of the dish,
+5. save AI-generated recipes,
+6. save their own modifications/tweaks to generated recipes,
+7. add their own custom recipes manually,
+8. view and manage saved recipes in a persistent recipe library.
+
+Important:
+This module is NOT a medical nutrition diagnosis system.
+Do NOT present outputs as medical advice, treatment, or clinical nutrition prescription.
+Frame results as meal-planning support, protein/nutrition guidance, recipe ideas, and wellness-oriented food suggestions.
+
+========================
+MODULE SCOPE
+========================
+
+Implement these sub-features:
+
+1. Nutrition Goals / Profile Intake
+- Create a form where the user can enter:
+  - primary goal: muscle gain / fat loss / maintenance / general wellness / high protein
+  - protein goal (grams/day optional)
+  - calorie goal optional
+  - dietary preferences: vegetarian / vegan / pescatarian / omnivore / halal / etc.
+  - dietary restrictions or allergies
+  - preferred cuisines
+  - disliked ingredients
+- Store this nutrition profile in the database.
+
+2. Pantry / Ingredient-Based Meal Planner
+- Let the user input ingredients they currently have at home.
+- Use Gemini API to generate meal suggestions based on:
+  - pantry ingredients,
+  - nutrition goals,
+  - dietary preferences/restrictions,
+  - workout context if available.
+- Workout-aware examples:
+  - post-workout high-protein meal,
+  - lighter recovery meal,
+  - quick high-protein meal before class,
+  - lower-calorie but filling option.
+- Output should include:
+  - recipe name
+  - short description
+  - estimated protein emphasis / goal fit
+  - ingredients used
+  - simple cooking steps
+  - why it fits the user’s current goal
+
+3. Authentic Dish Scraper + Protein Optimizer
+- Build a feature where the user can search for a traditional/authentic dish or cuisine.
+- Example user inputs:
+  - “Pad Thai but more protein”
+  - “Baingan bharta but healthier, less oil, extra protein”
+  - “Authentic Indian dinner with more protein”
+- The system should:
+  - find authentic or traditional reference recipes from a scraper service or fallback recipe dataset,
+  - preserve the spirit/core identity of the dish,
+  - suggest modifications that improve protein content or overall nutrition fit,
+  - optionally reduce oil, improve balance, or fit user goals without making the dish feel completely inauthentic.
+- Output should clearly separate:
+  - original/traditional baseline idea
+  - suggested nutrition/protein-oriented modifications
+  - explanation of what was changed and why
+
+4. Save AI-Generated Recipes
+- Let users save generated recipes to MongoDB.
+- Saved recipes should store:
+  - title
+  - source type (generated / optimized / custom)
+  - ingredients
+  - steps
+  - user nutrition goal context
+  - tags
+  - saved timestamp
+
+5. User Tweaks / Recipe Modification
+- Let the user edit or tweak an AI-generated recipe.
+- Example:
+  - add tofu
+  - reduce oil
+  - swap paneer for chicken
+  - remove peanuts
+  - increase serving size
+- Save these user modifications separately or as versioned recipe edits.
+- The system should preserve both:
+  - original generated recipe
+  - user-customized version
+
+6. Add Custom Recipe
+- Provide a separate feature where a user can manually add their own recipe from scratch.
+- Fields:
+  - recipe title
+  - cuisine
+  - ingredients
+  - instructions
+  - notes
+  - optional nutrition intent tags
+- Save to MongoDB.
+
+7. Saved Recipe Library
+- Build a recipe library where users can:
+  - view saved AI-generated recipes,
+  - view optimized authentic dish variants,
+  - view their own custom recipes,
+  - search/filter by tags, cuisine, protein goal, dietary type, or source type.
+
+========================
+NON-TECHNICAL PRODUCT INTENT
+========================
+
+This feature should feel like:
+- a practical nutrition assistant,
+- a protein-focused meal planning companion,
+- a culturally aware recipe optimizer,
+- a recipe memory system that learns what the user likes.
+
+It should NOT feel like:
+- a calorie-tracking-only app,
+- a medical diet prescription system,
+- a generic AI chatbot with random meal ideas,
+- a recipe blog clone.
+
+The UI should feel:
+- clean,
+- warm,
+- useful,
+- easy to navigate,
+- consistent with the larger NowWhat product.
+
+========================
+TECHNICAL EXPECTATIONS
+========================
+
+Architecture:
+- Keep the module modular internally.
+- Separate:
+  1. nutrition profile intake,
+  2. pantry/goal-based recipe generation,
+  3. authentic dish scraping + optimization,
+  4. recipe save/edit flows,
+  5. recipe library browsing.
+
+Important implementation constraint:
+- Create this module in a separate folder/module and do NOT modify the existing codebase directly.
+- Build it so it can be integrated later into the main NowWhat website with minimal changes.
+- Reuse the existing design language, component style, and UI patterns conceptually, but do not directly edit or depend on the existing app files if that is avoidable at this stage.
+
+Build production-style code structure even if some parts use mocks/fallbacks.
+
+========================
+DATA MODELS
+========================
+
+Implement or scaffold the following entities:
+
+NutritionProfile
+- id
+- user_id
+- primary_goal
+- protein_goal_g optional
+- calorie_goal optional
+- dietary_preferences: array
+- allergies: array
+- restrictions: array
+- preferred_cuisines: array
+- disliked_ingredients: array
+- created_at
+- updated_at
+
+PantryItem
+- id
+- user_id
+- item_name
+- quantity optional
+- unit optional
+- created_at
+
+GeneratedRecipe
+- id
+- user_id
+- title
+- source_type (generated / optimized_authentic / custom)
+- cuisine optional
+- goal_context optional
+- ingredients: array
+- instructions: array
+- tags: array
+- protein_focus_level optional
+- generated_with_gemini: boolean
+- created_at
+- updated_at
+
+RecipeModification
+- id
+- recipe_id
+- user_id
+- modification_notes
+- modified_ingredients: array
+- modified_instructions: array
+- created_at
+
+SavedRecipe
+- id
+- user_id
+- recipe_id
+- saved_at
+- user_notes optional
+
+AuthenticDishRequest
+- id
+- user_id
+- original_query
+- cuisine optional
+- protein_goal_context optional
+- optimization_preferences: array
+- created_at
+
+WellnessMealInsight
+- id
+- user_id
+- date
+- insight_type
+- message
+- related_signals: array
+
+========================
+CORE LOGIC RULES
+========================
+
+1. Meal and recipe outputs should be practical and realistic.
+Use language like:
+- “high-protein option”
+- “better fit for your current goal”
+- “protein-forward version”
+- “lighter variation”
+- “more balanced version”
+Do NOT use language like:
+- “perfect diet”
+- “medically required”
+- “guaranteed fat loss”
+- “this will cure”
+- “this is the only healthy option”
+
+2. Recipe suggestions must consider:
+- user nutrition goals,
+- dietary preferences/restrictions,
+- pantry ingredients,
+- saved profile,
+- workout context if available.
+
+3. Authentic dish optimization must preserve dish identity as much as possible.
+Examples:
+- suggest adding tofu, paneer, lentils, eggs, Greek yogurt, lean meat, edamame, or protein-rich sides where appropriate,
+- reduce oil moderately when possible,
+- do not completely transform the dish into something unrelated and still call it the same dish.
+
+4. Keep core filtering and recipe data handling deterministic wherever possible.
+Gemini should be used for:
+- structured recipe generation,
+- recipe optimization reasoning,
+- explanation text,
+- parsing flexible user input.
+Do NOT rely on Gemini alone for:
+- persistence logic,
+- filtering saved recipes,
+- source-of-truth storage,
+- recipe library state.
+
+5. For MVP, use a small local mock dataset for:
+- authentic dish examples,
+- recipe seeds,
+- pantry-friendly meal templates,
+if live scraping is not fully implemented yet.
+
+========================
+GROUNDING RULE
+========================
+
+Every recommendation, recipe suggestion, optimization output, or insight in this Nutrition Wellness module must include one concise grounding line.
+
+Format:
+Also check: [most relevant source or document]
+
+This line must always be present.
+
+Use context-appropriate grounding such as:
+- official nutrition label
+- recipe ingredient list
+- trusted recipe/source page
+- restaurant menu page
+- evidence-based dietary guideline
+- product/package instructions when relevant
+
+Examples:
+- Also check: the recipe ingredient list and serving sizes before cooking.
+- Also check: the official nutrition label for exact protein and calorie details.
+- Also check: a trusted recipe source for the traditional baseline version of this dish.
+- Also check: the restaurant’s official menu or nutrition page for exact details.
+
+Do not skip the grounding line.
+Do not phrase it like a legal disclaimer.
+Keep it natural and concise.
+
+========================
+GEMINI API USAGE
+========================
+
+Use Gemini API as the primary generation and reasoning layer for:
+- pantry-based meal suggestions,
+- nutrition-goal-aware recipe generation,
+- authentic dish optimization,
+- recipe explanation text,
+- user tweak interpretation.
+
+Gemini outputs should be structured and machine-readable wherever possible.
+
+Preferred Gemini use cases:
+- generate recipes from ingredient lists and goal context,
+- suggest protein-oriented or lighter modifications to traditional dishes,
+- explain why a recipe fits a user’s goals,
+- interpret user tweak requests like:
+  - “make it less oily”
+  - “add more protein”
+  - “make it vegetarian”
+  - “keep it authentic but healthier”
+
+Gemini must NOT:
+- make medical claims,
+- act as a dietitian diagnosis engine,
+- invent false nutrition certainty,
+- override deterministic storage and filtering logic.
+
+If Gemini is temporarily unavailable, support fallback/mock recipe generation through local templates or seeded recipe data.
+
+========================
+SCRAPING / AUTHENTIC RECIPE RULES
+========================
+
+For the authentic dish feature:
+- support a scraping service or recipe-source abstraction layer,
+- if live scraping is unavailable for MVP, use a fallback local dataset of authentic/traditional dish examples,
+- keep the architecture ready for future real scraping integration.
+
+When presenting optimized authentic dishes:
+- show the traditional baseline concept,
+- show the optimized version,
+- explain what changed,
+- avoid pretending the optimized version is the only “correct” form of the dish.
+
+========================
+UI REQUIREMENTS
+========================
+
+Create this as one Nutrition Wellness page/module with clearly separated sections.
+
+Main sections/components:
+
+1. Nutrition Profile Section
+- form for goals, protein target, dietary preferences, restrictions, preferred cuisines, disliked ingredients
+
+2. Pantry Meal Planner Section
+- user enters ingredients they have
+- CTA to generate meals
+- show generated meal cards
+- allow save recipe action
+
+3. Authentic Dish Optimizer Section
+- input like:
+  “Pad Thai but more protein”
+  “Baingan bharta but less oil and extra protein”
+- show:
+  - traditional baseline summary
+  - optimized version
+  - what changed
+  - save recipe CTA
+
+4. Saved Recipes Section
+- view saved generated recipes
+- edit/tweak saved recipe
+- duplicate recipe if needed
+- search/filter saved recipes
+
+5. Add Custom Recipe Section
+- manually add user’s own recipe
+- save to library
+
+6. Wellness Nutrition Insights Section
+- show simple cards or trend snippets connecting food choices/goals with available wellness context
+
+UI behavior:
+- keep all of this under one coherent Nutrition Wellness page,
+- sections may use cards, tabs, modals, drawers, or inline expansion,
+- the page should feel unified, not like separate mini apps.
+
+========================
+OUTPUT STYLE REQUIREMENTS
+========================
+
+Whenever the module generates a result for the user, structure it as:
+
+1. Main result
+2. Why it fits / what changed
+3. Confidence level if relevant
+4. Also check: ...
+
+Example:
+Result: This is a higher-protein version of Pad Thai that keeps the core sweet-salty-tangy flavor profile while improving protein balance.
+Why it fits: The recipe adds tofu/egg/chicken options, moderates oil slightly, and keeps the core sauce and noodle structure recognizable.
+Confidence: Medium
+Also check: a trusted Pad Thai recipe source and the ingredient labels for exact protein values.
+
+Do NOT overbuild:
+- no medical nutrition claims,
+- no advanced macro-accuracy promises unless supported by real nutrition data,
+- no giant recipe knowledge graph,
+- no overly complex scraping pipeline for MVP.
+
+========================
+DELIVERABLES
+========================
+
+Deliver:
+- frontend components,
+- backend API routes,
+- database models/schema,
+- Gemini integration scaffolding,
+- recipe generation logic,
+- authentic dish optimization flow,
+- saved recipe CRUD flows,
+- recipe modification support,
+- sample/mock dataset for recipes,
+- clean integration points for future NowWhat integration.
+
+Code should be modular, readable, and integration-friendly.
+
+========================
+PAGE ARCHITECTURE & INTEGRATION
+========================
+
+This Nutrition Wellness module should be built as one unified page/section that can later be integrated into the NowWhat website.
+
+The page should conceptually follow the existing NowWhat design language:
+- similar spacing,
+- card patterns,
+- CTA style,
+- section hierarchy,
+- visual tone.
+
+But for now:
+- build this in a separate folder/module,
+- do NOT directly modify the existing NowWhat codebase,
+- keep interfaces clean so integration later is easy.
+
+Suggested page layout:
+
+1. Page Header / Overview
+- title: Nutrition Wellness
+- short description
+- optional summary cards:
+  - active nutrition goal
+  - saved recipe count
+  - latest generated recipe
+  - latest nutrition insight
+
+2. Nutrition Profile Section
+- view/edit profile
+
+3. Pantry Meal Planner Section
+- input ingredients
+- generate meals
+- save recipes
+
+4. Authentic Dish Optimizer Section
+- input traditional dish request
+- generate optimized version
+- save recipe
+
+5. Saved Recipe Library Section
+- browse saved recipes
+- view modified recipes
+- filter/search
+
+6. Add Custom Recipe Section
+- add recipe manually
+
+7. Wellness Insights Section
+- show food-related wellness insights
+
+Do NOT make this feel like unrelated routes unless necessary.
+Prefer one unified parent page with clear sections.
+
+========================
+NOWWHAT INTEGRATION REQUIREMENTS
+========================
+
+This module must be integration-friendly with the existing NowWhat platform.
+
+Requirements:
+- do not touch the existing codebase directly in this build,
+- organize this module in its own separate folder,
+- keep frontend and backend contracts clean,
+- make it easy to plug into the existing auth, data, and layout systems later,
+- follow similar component and UX conventions so later integration feels natural.
+
+For demo readiness, support both:
+1. real user-created state saved to MongoDB, and
+2. optional seeded/mock data so the page does not appear empty on first load.
+
+The summary cards and sections should be able to read from saved nutrition profile data, saved/generated recipes, user modifications, and wellness insight records so the page feels populated and interactive during demo.

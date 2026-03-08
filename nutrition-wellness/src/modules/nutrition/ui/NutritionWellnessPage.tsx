@@ -141,12 +141,17 @@ const DEFAULT_FILTERS: LibraryFilters = {
   onlySaved: true,
 };
 
-export function NutritionWellnessPage() {
+interface NutritionWellnessPageProps {
+  userId?: string;
+  userName?: string;
+}
+
+export function NutritionWellnessPage({ userId: initialUserId, userName }: NutritionWellnessPageProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [userId, setUserId] = useState(DEFAULT_USER_ID);
+  const [userId, setUserId] = useState(initialUserId || DEFAULT_USER_ID);
   const [activeSection, setActiveSection] = useState<SectionKey>("profile");
 
   const [summary, setSummary] = useState<SummaryPayload | null>(null);
@@ -542,24 +547,13 @@ export function NutritionWellnessPage() {
   );
 
   return (
-    <main className="min-h-screen pt-20 pb-10">
-      <div className="w-full px-1 sm:px-2 lg:px-3 space-y-6">
+    <main className="min-h-screen pb-6" style={{ paddingTop: "4rem" }}>
+      <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 space-y-6 pt-6">
         <section className="module-card" id="overview">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <p className="text-base text-doom-muted">Hackathon standalone module</p>
-              <h1 className="text-2xl sm:text-3xl font-bold text-doom-text">Nutrition Wellness Workspace</h1>
-              <p className="text-base text-doom-muted mt-2 max-w-5xl">{MODULE_GUARDRAIL_TEXT}</p>
-            </div>
-
-            <div className="w-full lg:w-80">
-              <label className="text-base text-doom-muted">User ID</label>
-              <div className="flex gap-2 mt-1">
-                <input className="input-field" value={userId} onChange={(event) => setUserId(event.target.value)} />
-                <button className="btn-secondary" type="button" onClick={() => void loadAll()}>
-                  Load
-                </button>
-              </div>
+              <p className="text-base text-doom-muted">Logged in as {userName || userId}</p>
+              <h1 className="text-3xl font-bold text-doom-text">Nutrition Wellness</h1>
             </div>
           </div>
 

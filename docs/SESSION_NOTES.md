@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-WellBeing is a comprehensive wellness application built using a microservices architecture. The application currently includes fitness tracking with real-time pose analysis and a skin & hair analysis module, with plans for nutrition, sleep tracking, and supplement management features.
+WellBeing is a comprehensive wellness application built using a microservices architecture. The application includes fitness tracking with real-time pose analysis, skin & hair analysis, nutrition wellness planning, and restaurant finder with health scoring.
 
 ## Architecture
 
@@ -13,13 +13,25 @@ Wats_Next/
 ├── base/                          # Main application (port 3000)
 │   ├── Fitness tracker with pose estimation
 │   ├── Authentication system (JWT)
-│   ├── Homepage with feature carousel
+│   ├── Homepage with 5-screen carousel
+│   ├── User profile management
 │   └── Navigation to other microservices
 ├── skin-hair-analysis/            # Skin & hair module (port 3002)
 │   ├── Skin analysis with image upload
 │   ├── Hair analysis
 │   ├── Product recommendations
 │   └── Wellness insights
+├── nutrition-wellness/            # Nutrition planning (port 3003)
+│   ├── Pantry meal planner
+│   ├── Authentic dish optimizer
+│   ├── Recipe library with filters
+│   ├── Custom recipe creation
+│   └── AI wellness insights
+├── nutrition-yelp/                # Restaurant finder (port 3004 frontend, 3001 backend)
+│   ├── Yelp restaurant search
+│   ├── AI health scoring
+│   ├── Food photo scanning
+│   └── Favorite restaurants tracking
 └── docs/                          # Documentation
 ```
 
@@ -154,7 +166,7 @@ private calculateAngle(a: Point, b: Point, c: Point): number {
 - Summary dashboard with statistics
 
 **Authentication Integration**:
-- Receives userId from authenticated user via query parameter
+- Receives userId from authenticated user via JWT cookie
 - Verifies JWT token from base application
 - Redirects to base login if not authenticated
 - Shared JWT_SECRET for token verification
@@ -164,29 +176,128 @@ private calculateAngle(a: Point, b: Point, c: Point): number {
 - Logout redirect: Uses `window.location.href` for guaranteed redirect to base app
 - Layout alignment: Matches base app padding and spacing
 
-### 4. Navigation System
+### 4. Nutrition Wellness Module
 
-**Base Navigation** (`base/src/components/Navigation.tsx`):
-- Physical Fitness
-- Nutrition (placeholder)
-- Skin & Hair Analysis (links to :3002)
-- Sleep Tracking (placeholder)
-- Supplements (placeholder)
-- User profile display with name
-- Logout button with forced reload
+**Location**: `nutrition-wellness/src/modules/nutrition/`
 
-**Skin-Hair Navigation** (`skin-hair-analysis/src/components/Navigation.tsx`):
-- User greeting: "Hi, {username}" in green
-- Home button (back to base app)
-- Profile section
-- Logout (redirects to base with API call)
-- Mobile-responsive hamburger menu
+**Port**: 3003
+
+**Features**:
+- **Pantry Meal Planner**: Generate meals from available ingredients
+- **Authentic Dish Optimizer**: Modify traditional recipes for health goals
+- **Recipe Library**: Search, filter, save, and modify generated recipes
+- **Custom Recipes**: Manually add and save personal recipes
+- **Wellness Insights**: AI-generated nutrition behavior analysis
+
+**Authentication Integration**:
+- JWT verification via shared JWT_SECRET
+- Redirects to base app if not authenticated
+- Uses authenticated userId for all operations
+
+**Session-Based Insights**:
+- Tracks nutrition activities automatically (15-minute sessions)
+- Meaningful activities: profile updates, recipe generation, saving, modifications
+- AI-generated insights from session patterns
+- Stored in separate `nutrition_insight_memory` collection
+
+**Database Collections**:
+- `nutrition_profiles` - User dietary preferences and goals
+- `nutrition_recipes` - Generated and custom recipes
+- `nutrition_pantry_items` - Saved pantry ingredients
+- `nutrition_insight_sessions` - Active tracking sessions
+- `nutrition_insight_memory` - Finalized insights
+
+### 5. Find Restaurants Module (Nutrition-Yelp)
+
+**Location**: `nutrition-yelp/`
+
+**Ports**:
+- Frontend: 3004
+- Backend: 3001
+
+**Architecture**: Separate frontend and backend with API proxy
+
+**Features**:
+- **Restaurant Search**: Yelp API integration with location, category, price filters
+- **AI Health Scoring**: Gemini-powered health score for each restaurant (0-100)
+- **Food Scanner**: Upload food photos for nutritional breakdown
+- **Favorites**: Like/unlike restaurants, filter by liked
+- **Activity Tracking**: Automatic tracking of searches, clicks, favorites
+- **Insights Generation**: AI-generated dining preference insights (every 10 minutes)
+
+**Authentication Integration**:
+- JWT verification via shared JWT_SECRET
+- Redirects to base app if not authenticated
+- Uses authenticated userId for favorites, tracking, insights
+
+**API Endpoints** (Backend on :3001):
+- `GET /api/yelp` - Search restaurants via Yelp API
+- `POST /api/health-score` - AI health scoring for restaurants
+- `POST /api/food-scan` - Analyze food photos
+- `GET/POST /api/favorites` - Manage favorite restaurants
+- `POST /api/track-click` - Track user activity
+- `GET/POST /api/insights` - Generate dining insights
+
+**Database Collections**:
+- `favorites` - Liked restaurants per user
+- `clicks` - User activity tracking
+- `yelp-insights` - AI-generated dining preference insights
+
+**Environment Variables** (Backend):
+- `GEMINI_API_KEY` - For health scoring and food scanning
+- `YELP_API_KEY` - For restaurant search
+- `MONGODB_URI` - Database connection
+
+### 6. User Profile Management
+
+**Location**: `base/src/app/profile/`
+
+**Features**:
+- View and edit account information
+- Extended profile fields (optional):
+  - Date of Birth
+  - Height (cm)
+  - Weight (kg)
+  - Lifestyle (Sedentary, Lightly Active, Moderately Active, Very Active, Extremely Active)
+- Mobile-responsive 3-column grid layout
+- Email displayed in header (non-editable)
+- User ID displayed for reference
+
+**Database Structure**:
+- `users` collection - Email, password, name, createdAt
+- `userProfiles` collection - Extended profile data linked by userId
+
+**API Endpoints**:
+- `POST /api/auth/update-profile` - Update name in users collection
+- `GET /api/profile` - Fetch extended profile
+- `POST /api/profile` - Save extended profile data
+
+### 7. Unified Navigation System
+
+**Consistent Across All Pages**:
+
+All microservices now share the same navigation structure with cross-linking:
+
+**All Navigation Bars Include**:
+- Home button → http://localhost:3000
+- Physical Fitness → http://localhost:3000/fitness
+- Nutrition → http://localhost:3003
+- Find Restaurants → http://localhost:3004
+- Skin & Hair Analysis → http://localhost:3002
+- Profile button → /profile (or http://localhost:3000/profile for microservices)
+- Logout button
+
+**Page-Specific Navigation**:
+- **Homepage**: Shows all links + Profile icon with username (clickable)
+- **Fitness Page**: FitnessNavigation (excludes Physical Fitness link)
+- **Each Microservice**: Excludes its own link from menu
 
 **Common Design**:
 - Fixed top bar with backdrop blur
 - Doom theme colors (primary: #00ff9f, accent: #00d4ff)
 - Animated mobile menu with framer-motion
-- Profile info in mobile footer
+- Profile button replaces "Hi, username" for cleaner UI
+- Consistent spacing and icon sizes across all pages
 
 ## Configuration
 
@@ -229,8 +340,9 @@ JWT_SECRET=<same-shared-secret-key>
 
 ### Prerequisites
 - Node.js 18+
-- MongoDB running on localhost:27017
-- Both apps' dependencies installed (`npm install`)
+- MongoDB running (cloud or local)
+- All dependencies installed (`npm install` in each folder)
+- Yelp API key (optional, for restaurant search)
 
 ### Start Commands
 
@@ -248,20 +360,42 @@ npm run dev
 # Runs on http://localhost:3002
 ```
 
+**Terminal 3 - Nutrition Wellness**:
+```bash
+cd /Users/charithpurushotham/Desktop/Wats_Next/nutrition-wellness
+npm run dev
+# Runs on http://localhost:3003
+```
+
+**Terminal 4 - Nutrition-Yelp Backend**:
+```bash
+cd /Users/charithpurushotham/Desktop/Wats_Next/nutrition-yelp/backend
+npm run dev
+# Runs on http://localhost:3001
+```
+
+**Terminal 5 - Nutrition-Yelp Frontend**:
+```bash
+cd /Users/charithpurushotham/Desktop/Wats_Next/nutrition-yelp/frontend
+npm run dev
+# Runs on http://localhost:3004
+```
+
 ### User Flow
 
 1. Navigate to http://localhost:3000
 2. Register account or login
-3. View feature carousel on homepage
-4. Select "Start Training" for fitness tracker
-5. Choose exercise (Bicep Curl or Lateral Raises)
-6. Allow camera access
-7. Start exercise and perform reps
-8. View real-time feedback (skeleton colors, angles, voice)
-9. Stop exercise to see session summary
-10. Click "Analyse Your Skin" to visit skin-hair module
-11. Automatically authenticated via JWT cookie
-12. Use skin/hair features with same userId
+3. View 5-screen feature carousel on homepage
+4. Navigate to any feature:
+   - **Physical Fitness** - Exercise tracking with pose analysis
+   - **Nutrition** - Meal planning and recipe optimization
+   - **Find Restaurants** - Healthy restaurant search with AI scoring
+   - **Skin Analysis** - Selfie-based skin analysis
+   - **Hair Analysis** - Hair health tracking
+5. All microservices automatically authenticated via JWT cookie
+6. Access profile page from any navigation bar
+7. Update personal information (DOB, height, weight, lifestyle)
+8. Navigate seamlessly between all modules
 
 ## Critical Implementation Details
 
@@ -475,7 +609,89 @@ poseRef.current = new Pose({...});
 
 **Last Updated**: March 8, 2026
 
-**Current Commit**: 981e2ee - "Implement JWT authentication and integrate skin-hair microservice"
+**Current Status**: All 4 microservices integrated with unified navigation and profile management
+
+## Recent Updates (Current Session)
+
+### Microservices Integration
+
+**Nutrition Wellness Integration**:
+- Configured to run on port 3003
+- Added JWT dependencies (jsonwebtoken, bcryptjs)
+- Created auth.ts for token verification
+- Updated Navigation component with full menu
+- Removed userId input field, uses authenticated userId automatically
+- Updated page.tsx to pass userId/userName props
+- Created .env.local with shared JWT_SECRET
+
+**Nutrition-Yelp Integration**:
+- Frontend on port 3004, Backend on port 3001
+- Separate frontend/backend architecture with API proxy
+- Added JWT authentication to frontend
+- Created Navigation component matching other microservices
+- Refactored page.tsx → RestaurantSearchPage.tsx
+- Updated all userId references from hardcoded to authenticated
+- Created .env.local files for both frontend and backend
+- Backend needs: GEMINI_API_KEY, YELP_API_KEY, MONGODB_URI
+
+### Homepage Carousel Updates
+
+**Now 5 Screens**:
+1. Physical Fitness → /fitness
+2. Nutrition → http://localhost:3003
+3. Skin Analysis → http://localhost:3002
+4. Hair Analysis → http://localhost:3002
+5. Find Restaurants → http://localhost:3004 (NEW)
+
+### Navigation Updates
+
+**Unified Navigation Across All Pages**:
+- Removed Sleep Tracking and Supplements from menu
+- Added Find Restaurants button
+- Replaced "Hi, username" with Profile button
+- All microservices show full navigation menu
+- Each page excludes its own link from menu
+- Profile button links to base app profile page
+- Fitness page has dedicated FitnessNavigation component
+
+### Profile Page Creation
+
+**Location**: `base/src/app/profile/page.tsx`
+
+**Features**:
+- Mobile-responsive 3-column grid layout (1 col mobile, 2 tablet, 3 desktop)
+- Email displayed in header (top-right)
+- Editable fields:
+  - Full Name
+  - Date of Birth (optional, date picker)
+  - Height (optional, number input with cm label)
+  - Weight (optional, number input with kg label)
+  - Lifestyle (optional, dropdown: Sedentary, Lightly Active, Moderately Active, Very Active, Extremely Active)
+- Read-only fields:
+  - Email Address
+  - Member Since
+  - User ID
+- Edit/Save/Cancel functionality
+
+**Database Structure**:
+- `users` collection: name updated via POST /api/auth/update-profile
+- `userProfiles` collection: extended data via GET/POST /api/profile
+- Separate collections linked by userId
+
+**API Endpoints Created**:
+- `POST /api/auth/update-profile` - Update name and refresh JWT token
+- `GET /api/profile` - Fetch extended profile
+- `POST /api/profile` - Upsert extended profile data
+
+### Key Fixes
+
+**Database Import Error**:
+- Fixed: Changed `getDb()` to `getDatabase()` in update-profile route
+- Issue: Base app exports `getDatabase()` not `getDb()`
+
+**Asset Loading**:
+- Copied restaurant.mp4 from base/assets/ to base/public/assets/
+- Updated 5th screen to use video format instead of image
 
 ## Appendix: Key File Locations
 
