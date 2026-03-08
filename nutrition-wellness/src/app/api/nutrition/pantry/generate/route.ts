@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getNutritionProfile, replacePantryItems } from "@/modules/nutrition/repositories";
+import { trackNutritionActivitySafely } from "@/modules/nutrition/services/insightMemory";
 import { generatePantryMeals } from "@/modules/nutrition/services/pantryGenerator";
 import { validatePantryGeneratePayload } from "@/modules/nutrition/validators";
 
@@ -22,6 +23,20 @@ export async function POST(request: NextRequest) {
       pantryIngredients: validated.pantry_ingredients,
       workoutContext: validated.workout_context,
       maxResults: validated.max_results,
+    });
+
+    await trackNutritionActivitySafely({
+      userId: validated.user_id,
+      actionType: "recipe_generated",
+      data: {
+        source: "pantry_generate",
+        workout_context: validated.workout_context || "",
+        pantry_ingredient_count: validated.pantry_ingredients.length,
+        pantry_preview: validated.pantry_ingredients.slice(0, 10),
+        generated_count: generated.meals.length,
+        meal_titles: generated.meals.map((meal) => meal.title).slice(0, 8),
+        tags: generated.meals.flatMap((meal) => meal.tags || []).slice(0, 20),
+      },
     });
 
     return NextResponse.json({

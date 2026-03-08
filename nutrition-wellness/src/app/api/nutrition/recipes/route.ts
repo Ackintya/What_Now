@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createRecipe, createSavedRecipe, listRecipes } from "@/modules/nutrition/repositories";
+import { trackNutritionActivitySafely } from "@/modules/nutrition/services/insightMemory";
 import { validateRecipePayload } from "@/modules/nutrition/validators";
 
 function parseTagsParam(value: string | null): string[] {
@@ -65,6 +66,41 @@ export async function POST(request: NextRequest) {
     let saved = null;
     if (validated.save && recipe._id) {
       saved = await createSavedRecipe(validated.user_id, recipe._id, validated.save_note);
+    }
+
+    if (validated.source_type === "custom") {
+      await trackNutritionActivitySafely({
+        userId: validated.user_id,
+        actionType: "custom_recipe_added",
+        data: {
+          recipe_title: validated.title,
+          cuisine: validated.cuisine || "",
+          tags: validated.tags.slice(0, 12),
+        },
+      });
+    } else {
+      await trackNutritionActivitySafely({
+        userId: validated.user_id,
+        actionType: "recipe_generated",
+        data: {
+          source_type: validated.source_type,
+          recipe_title: validated.title,
+          cuisine: validated.cuisine || "",
+          tags: validated.tags.slice(0, 12),
+          protein_focus_level: validated.protein_focus_level || "",
+        },
+      });
+    }
+
+    if (validated.save) {
+      await trackNutritionActivitySafely({
+        userId: validated.user_id,
+        actionType: "recipe_saved",
+        data: {
+          recipe_title: validated.title,
+          source_type: validated.source_type,
+        },
+      });
     }
 
     return NextResponse.json({ success: true, recipe, saved }, { status: 201 });

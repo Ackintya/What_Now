@@ -9,6 +9,7 @@ import {
   getRecipeById,
   listRecipeModifications,
 } from "@/modules/nutrition/repositories";
+import { trackNutritionActivitySafely } from "@/modules/nutrition/services/insightMemory";
 import { interpretAndApplyRecipeTweak } from "@/modules/nutrition/services/recipeModification";
 import { validateModificationPayload } from "@/modules/nutrition/validators";
 
@@ -91,6 +92,17 @@ export async function POST(request: NextRequest, context: { params: { id: string
       modified_ingredients: interpreted.modified_ingredients,
       modified_instructions: interpreted.modified_instructions,
       created_recipe_id: modifiedRecipe?._id,
+    });
+
+    await trackNutritionActivitySafely({
+      userId: validated.user_id,
+      actionType: "recipe_modified",
+      data: {
+        recipe_id: context.params.id,
+        recipe_title: recipe.title,
+        modification_notes: validated.modification_notes,
+        created_modified_recipe_id: modifiedRecipe?._id || "",
+      },
     });
 
     return NextResponse.json({

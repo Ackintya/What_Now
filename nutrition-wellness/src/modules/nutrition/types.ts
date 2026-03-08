@@ -153,3 +153,43 @@ export interface SummaryPayload {
   latest_recipe_title: string;
   latest_insight_message: string;
 }
+
+export type NutritionActivityType =
+  | "profile_updated"
+  | "recipe_generated"
+  | "authentic_optimization_completed"
+  | "recipe_saved"
+  | "recipe_modified"
+  | "custom_recipe_added"
+  | "nutrition_insight_generated";
+
+export interface NutritionInsightMemory {
+  _id?: string;
+  user_id: string;
+  created_at: Date;
+  insight_text: string;
+}
+
+export interface NutritionSessionActivityEvent {
+  at: Date;
+  action_type: NutritionActivityType;
+  data: Record<string, unknown>;
+}
+
+export interface NutritionInsightSession {
+  _id?: string;
+  user_id: string;
+  status: "active" | "finalized";
+  started_at: Date;
+  last_activity_at: Date;
+  created_at: Date;
+  updated_at: Date;
+  finalized_at?: Date;
+  event_count: number;
+  action_types: NutritionActivityType[];
+  events: NutritionSessionActivityEvent[];
+  finalization_reason?: "stale_inactivity" | "superseded_by_new_activity" | "duplicate_summary" | "no_activity";
+  generated_insight_id?: string;
+  generated_insight_text?: string;
+  duplicate_of_insight_id?: string;
+}
