@@ -30,7 +30,7 @@ Create `.env.local`:
 
 ```env
 # MongoDB
-MONGODB_URI=mongodb+srv://charith1tryout_db_user:test1234@cluster0.xgi3nyd.mongodb.net/wellbeing?appName=Cluster0
+MONGODB_URI=mongodb+srv://YOUR_USER:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/
 
 # Clerk Auth
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...

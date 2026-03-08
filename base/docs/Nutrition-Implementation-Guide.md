@@ -13,7 +13,7 @@ class DatabaseConnection {
 
   private constructor() {
     // Using the provided connection string
-    const uri = 'mongodb+srv://charith1tryout_db_user:test1234@cluster0.xgi3nyd.mongodb.net/?appName=Cluster0';
+    const uri = 'mongodb+srv://YOUR_USER:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/
     this.client = new MongoClient(uri);
   }
 
@@ -1206,7 +1206,7 @@ export default MealGenerator;
 
 ```bash
 # .env.local
-MONGODB_URI=mongodb+srv://charith1tryout_db_user:test1234@cluster0.xgi3nyd.mongodb.net/?appName=Cluster0
+MONGODB_URI=mongodb+srv://YOUR_USER:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/
 GEMINI_API_KEY=your_gemini_api_key_here
 GOOGLE_CLOUD_PROJECT=your_gcp_project_id
 GOOGLE_APPLICATION_CREDENTIALS=./credentials/gcp-service-account.json

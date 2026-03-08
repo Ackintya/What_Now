@@ -166,7 +166,7 @@ A complete, secure JWT-based authentication system has been successfully impleme
 
 ```env
 # MongoDB Connection
-MONGODB_URI=mongodb+srv://charith1tryout_db_user:test1234@cluster0.xgi3nyd.mongodb.net/?appName=Cluster0
+MONGODB_URI=mongodb+srv://YOUR_USER:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/
 MONGODB_DB=wellbeing_app
 
 # JWT Authentication
@@ -181,7 +181,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ```env
 # MongoDB Connection (SAME AS BASE)
-MONGODB_URI=mongodb+srv://charith1tryout_db_user:test1234@cluster0.xgi3nyd.mongodb.net/?appName=Cluster0
+MONGODB_URI=mongodb+srv://YOUR_USER:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/
 MONGODB_DB=wellbeing_app
 
 # JWT Authentication (MUST MATCH BASE)
@@ -189,7 +189,7 @@ JWT_SECRET=a01f0760ad1330cb357de54871b9a243c8b054f6f931bac5601d3ac0c7900710
 JWT_EXPIRES_IN=7d
 
 # Gemini API
-GEMINI_API_KEY=AIzaSyDwRs6uRfbPMiJ7XE56iXrn-R9Z3rf_zSw
+GEMINI_API_KEY=REDACTED
 ```
 
 **CRITICAL**: JWT_SECRET must be identical in both apps for cookie sharing.

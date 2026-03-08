@@ -180,7 +180,7 @@ if (angle > 180.0) angle = 360 - angle;
 
 ### Connection
 ```
-mongodb+srv://charith1tryout_db_user:test1234@cluster0.xgi3nyd.mongodb.net/?appName=Cluster0
+mongodb+srv://YOUR_USER:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/
 Database: wellbeing_app
 Collection: sessions
 ```

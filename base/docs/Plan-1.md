@@ -280,7 +280,7 @@ Some noyes:
 
 4. the physical fitness is a feature which opens a page where we can have all the features related to physical wellbeing and then in the hamburger menu there wil other features like the skin analyst , hair anlyst or nutrition etc etc. FYI no ml models to be used. 
 
-5. for the rag system for recipes or anything we will have a memoery layer (basically context fill with patterns about the user, we can run a  backgroiund consolidation of the chats, we can store the chats onto a db as well). db we can use mongodb :mongodb+srv://charith1tryout_db_user:test1234@cluster0.xgi3nyd.mongodb.net/?appName=Cluster0. . we can ues this for login in and log out. u can use this for dashbaord for the phycial wellness thing : https://21st.dev/community/themes/doom-64. 
+5. for the rag system for recipes or anything we will have a memoery layer (basically context fill with patterns about the user, we can run a  backgroiund consolidation of the chats, we can store the chats onto a db as well). db we can use mongodb :mongodb+srv://YOUR_USER:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/
 
 
 any questions?
