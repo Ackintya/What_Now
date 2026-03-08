@@ -9,7 +9,7 @@ Complete JWT-based authentication system implemented for the WellBeing app with 
 
 #### 1. Environment Configuration
 **File**: `/Users/charithpurushotham/Desktop/Wats_Next/base/.env.local`
-- Added JWT_SECRET: `a01f0760ad1330cb357de54871b9a243c8b054f6f931bac5601d3ac0c7900710`
+- Added JWT_SECRET: `REDACTED_JWT_SECRET`
 - Added JWT_EXPIRES_IN: `7d`
 
 #### 2. Auth Utilities
@@ -300,7 +300,7 @@ MONGODB_URI=mongodb+srv://...
 MONGODB_DB=wellbeing_app
 GEMINI_API_KEY=...
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-JWT_SECRET=a01f0760ad1330cb357de54871b9a243c8b054f6f931bac5601d3ac0c7900710
+JWT_SECRET=REDACTED_JWT_SECRET
 JWT_EXPIRES_IN=7d
 ```
 
@@ -309,7 +309,7 @@ JWT_EXPIRES_IN=7d
 MONGODB_URI=mongodb+srv://...
 MONGODB_DB=wellbeing_app
 GEMINI_API_KEY=...
-JWT_SECRET=a01f0760ad1330cb357de54871b9a243c8b054f6f931bac5601d3ac0c7900710
+JWT_SECRET=REDACTED_JWT_SECRET
 JWT_EXPIRES_IN=7d
 ```
 
