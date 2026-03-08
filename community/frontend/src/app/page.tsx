@@ -9,7 +9,14 @@ import PeopleLikeYou from "@/components/PeopleLikeYou";
 import EventsCalendar from "@/components/EventsCalendar";
 import MoodCheckin from "@/components/MoodCheckin";
 
-const USER_ID = "demo-user";
+// userId comes from URL query param (?userId=...) set by base app on navigation
+function getUserId(): string {
+  if (typeof window === "undefined") return "demo-user";
+  const params = new URLSearchParams(window.location.search);
+  return params.get("userId") || "demo-user";
+}
+
+const USER_ID = typeof window !== "undefined" ? getUserId() : "demo-user";
 
 const FILTER_TAGS = [
   { value: "", label: "All Topics" },

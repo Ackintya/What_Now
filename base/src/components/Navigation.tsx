@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, Dumbbell, Apple, Droplet, UtensilsCrossed, Activity, UserRound, LogOut } from "lucide-react";
+import { Menu, X, Dumbbell, Apple, Droplet, UtensilsCrossed, Users2, Activity, UserRound, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -30,11 +30,20 @@ const menuItems: MenuItem[] = [
   { name: "Nutrition", href: "http://localhost:3003", icon: Apple, color: "text-green-400", external: true },
   { name: "Find Restaurants", href: "http://localhost:3004", icon: UtensilsCrossed, color: "text-yellow-400", external: true },
   { name: "Skin & Hair Analysis", href: "http://localhost:3002", icon: Droplet, color: "text-blue-400", external: true },
+  { name: "Community", href: "http://localhost:3006", icon: Users2, color: "text-pink-400", external: true },
 ];
 
 export function Navigation({ user }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+
+  // Append userId query param for services that need it
+  const getHref = (item: MenuItem) => {
+    if (item.name === "Community" && user?.userId) {
+      return `${item.href}?userId=${user.userId}`;
+    }
+    return item.href;
+  };
 
   const handleLogout = async () => {
     try {
@@ -69,7 +78,7 @@ export function Navigation({ user }: NavigationProps) {
                   return (
                     <a
                       key={item.name}
-                      href={item.href}
+                      href={getHref(item)}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-doom-bg/50 transition-colors ${item.color}`}
                     >
                       <Icon className="w-5 h-5" />
@@ -80,7 +89,7 @@ export function Navigation({ user }: NavigationProps) {
                 return (
                   <Link
                     key={item.name}
-                    href={item.href}
+                    href={getHref(item)}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-doom-bg/50 transition-colors ${item.color}`}
                   >
                     <Icon className="w-5 h-5" />
@@ -178,7 +187,7 @@ export function Navigation({ user }: NavigationProps) {
                     >
                       {item.external ? (
                         <a
-                          href={item.href}
+                          href={getHref(item)}
                           onClick={() => setIsOpen(false)}
                           className={`flex items-center space-x-4 p-4 rounded-lg hover:bg-doom-bg/50 transition-colors group ${item.color}`}
                         >
@@ -191,7 +200,7 @@ export function Navigation({ user }: NavigationProps) {
                         </a>
                       ) : (
                         <Link
-                          href={item.href}
+                          href={getHref(item)}
                           onClick={() => setIsOpen(false)}
                           className={`flex items-center space-x-4 p-4 rounded-lg hover:bg-doom-bg/50 transition-colors group ${item.color}`}
                         >

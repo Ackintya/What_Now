@@ -8,6 +8,7 @@ import {
   Droplets,
   Scissors,
   UtensilsCrossed,
+  Users2,
   LogOut,
   User,
 } from "lucide-react";
@@ -130,6 +131,24 @@ const featureScreens: FeatureScreen[] = [
     icon: UtensilsCrossed,
     ctaHref: "http://localhost:3004",
     ctaLabel: "Find Restaurants",
+  },
+  {
+    id: "community",
+    label: "Community",
+    title: "Connect with people on the same wellness journey",
+    description:
+      "Share progress, join wellness events, find people like you, and stay motivated together.",
+    bullets: [
+      "Post updates, tips, and milestones with the community",
+      "Mood check-ins and daily wellness tracking",
+      "Find people with similar fitness and health goals",
+    ],
+    mediaType: "image",
+    mediaSrc: "/assets/workout.jpg",
+    mediaAlt: "Community feature",
+    icon: Users2,
+    ctaHref: "http://localhost:3006",
+    ctaLabel: "Join Community",
   },
 ];
 
@@ -417,13 +436,17 @@ export default function Home() {
                   ))}
                 </ul>
 
-                <Link
-                  href={screen.ctaHref}
+                <a
+                  href={
+                    screen.ctaHref.startsWith("http") && user?.userId
+                      ? `${screen.ctaHref}?userId=${user.userId}`
+                      : screen.ctaHref
+                  }
                   className="mt-8 inline-flex items-center gap-2 rounded-xl bg-doom-primary px-6 py-3 font-semibold text-doom-bg transition-transform hover:-translate-y-0.5"
                 >
                   {screen.ctaLabel}
                   <ArrowRight className="h-4 w-4" />
-                </Link>
+                </a>
               </div>
             </div>
           );
