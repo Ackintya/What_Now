@@ -1,0 +1,213 @@
+
+> skin-hair-analysis@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.3
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1961ms
+ ○ Compiling / ...
+ ✓ Compiled / in 7s (1359 modules)
+ GET / 200 in 7418ms
+ ✓ Compiled in 661ms (685 modules)
+ GET / 200 in 69ms
+ ○ Compiling /api/skin-hair/loved-products ...
+ ✓ Compiled /api/skin-hair/loved-products in 630ms (709 modules)
+ ✓ Compiled (720 modules)
+ GET /api/skin-hair/recommendations?userId=demo-user 200 in 2606ms
+ GET /api/skin-hair/wellness-insights?userId=demo-user 200 in 2663ms
+ GET /api/skin-hair/loved-products?userId=demo-user 200 in 2720ms
+ GET /api/skin-hair/summary?userId=demo-user 200 in 2768ms
+ GET /api/skin-hair/profile?userId=demo-user 200 in 3148ms
+ ✓ Compiled /api/skin-hair/recommendations/generate in 334ms (727 modules)
+Online ingredient lookup failed for Gemini candidate, using Gemini-provided ingredients: Error: Could not find ingredients online for this product. Try a more specific product name and brand.
+    at lookupProductIngredients (webpack-internal:///(rsc)/./src/modules/skin-hair/ingredientLookup.ts:151:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async eval (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:141:28)
+    at async Promise.all (index 1)
+    at async discoverProductsWithGemini (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:136:22)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/skin-hair/recommendations/generate/route.ts:52:29)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:53446
+    at async e_.execute (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:44747)
+    at async e_.handle (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:54700)
+    at async doRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1507:28)
+    at async DevServer.renderPageComponent (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:816:17)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\start-server.js:141:13)
+Online ingredient lookup failed for Gemini candidate, using Gemini-provided ingredients: Error: Could not find ingredients online for this product. Try a more specific product name and brand.
+    at lookupProductIngredients (webpack-internal:///(rsc)/./src/modules/skin-hair/ingredientLookup.ts:151:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async eval (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:141:28)
+    at async Promise.all (index 6)
+    at async discoverProductsWithGemini (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:136:22)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/skin-hair/recommendations/generate/route.ts:52:29)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:53446
+    at async e_.execute (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:44747)
+    at async e_.handle (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:54700)
+    at async doRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1507:28)
+    at async DevServer.renderPageComponent (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:816:17)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\start-server.js:141:13)
+Online ingredient lookup failed for Gemini candidate, using Gemini-provided ingredients: Error: Could not find ingredients online for this product. Try a more specific product name and brand.
+    at lookupProductIngredients (webpack-internal:///(rsc)/./src/modules/skin-hair/ingredientLookup.ts:151:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async eval (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:141:28)
+    at async Promise.all (index 4)
+    at async discoverProductsWithGemini (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:136:22)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/skin-hair/recommendations/generate/route.ts:52:29)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:53446
+    at async e_.execute (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:44747)
+    at async e_.handle (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:54700)
+    at async doRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1507:28)
+    at async DevServer.renderPageComponent (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:816:17)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\start-server.js:141:13)
+Online ingredient lookup failed for Gemini candidate, using Gemini-provided ingredients: Error: Could not find ingredients online for this product. Try a more specific product name and brand.
+    at lookupProductIngredients (webpack-internal:///(rsc)/./src/modules/skin-hair/ingredientLookup.ts:151:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async eval (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:141:28)
+    at async Promise.all (index 7)
+    at async discoverProductsWithGemini (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:136:22)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/skin-hair/recommendations/generate/route.ts:52:29)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:53446
+    at async e_.execute (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:44747)
+    at async e_.handle (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:54700)
+    at async doRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1507:28)
+    at async DevServer.renderPageComponent (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:816:17)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\start-server.js:141:13)
+Online ingredient lookup failed for Gemini candidate, using Gemini-provided ingredients: Error: Could not find ingredients online for this product. Try a more specific product name and brand.
+    at lookupProductIngredients (webpack-internal:///(rsc)/./src/modules/skin-hair/ingredientLookup.ts:151:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async eval (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:141:28)
+    at async Promise.all (index 2)
+    at async discoverProductsWithGemini (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:136:22)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/skin-hair/recommendations/generate/route.ts:52:29)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:53446
+    at async e_.execute (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:44747)
+    at async e_.handle (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:54700)
+    at async doRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1507:28)
+    at async DevServer.renderPageComponent (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:816:17)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\start-server.js:141:13)
+Online ingredient lookup failed for Gemini candidate, using Gemini-provided ingredients: Error: Could not find ingredients online for this product. Try a more specific product name and brand.
+    at lookupProductIngredients (webpack-internal:///(rsc)/./src/modules/skin-hair/ingredientLookup.ts:151:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async eval (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:141:28)
+    at async Promise.all (index 5)
+    at async discoverProductsWithGemini (webpack-internal:///(rsc)/./src/modules/skin-hair/geminiProductDiscovery.ts:136:22)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/skin-hair/recommendations/generate/route.ts:52:29)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:53446
+    at async e_.execute (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:44747)
+    at async e_.handle (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:54700)
+    at async doRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1507:28)
+    at async DevServer.renderPageComponent (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\base-server.js:816:17)
+    at async C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (C:\Users\arjya\NowWhat\skin-hair-analysis\node_modules\next\dist\server\lib\start-server.js:141:13)
+ POST /api/skin-hair/recommendations/generate 200 in 20649ms
+ GET /api/skin-hair/summary?userId=demo-user 200 in 677ms
+ ✓ Compiled /api/skin-hair/analyze in 297ms (732 modules)
+ POST /api/skin-hair/analyze 200 in 7996ms
+ GET /api/skin-hair/summary?userId=demo-user 200 in 133ms
+ POST /api/skin-hair/analyze 200 in 4799ms
+ GET /api/skin-hair/summary?userId=demo-user 200 in 103ms
+ POST /api/skin-hair/analyze 200 in 5826ms
+ GET /api/skin-hair/summary?userId=demo-user 200 in 292ms
+ ✓ Compiled /api/skin-hair/wellness-insights/generate in 296ms (722 modules)
+ POST /api/skin-hair/wellness-insights/generate 200 in 641ms
+ GET /api/skin-hair/summary?userId=demo-user 200 in 72ms
+ ✓ Compiled in 866ms (1359 modules)
+ ✓ Compiled in 401ms (1359 modules)
+ ✓ Compiled in 499ms (1359 modules)
+ ✓ Compiled in 422ms (1359 modules)
+ ✓ Compiled in 341ms (1359 modules)
+ ✓ Compiled in 649ms (1359 modules)
+ ✓ Compiled /api/skin-hair/wellness-insights in 253ms (709 modules)
+ ✓ Compiled (720 modules)
+ GET /api/skin-hair/summary?userId=demo-user 200 in 569ms
+ GET /api/skin-hair/wellness-insights?userId=demo-user 200 in 623ms
+ GET /api/skin-hair/profile?userId=demo-user 200 in 627ms
+ GET /api/skin-hair/recommendations?userId=demo-user 200 in 1015ms
+ GET /api/skin-hair/loved-products?userId=demo-user 200 in 1017ms
+ GET / 200 in 192ms
+ GET / 200 in 69ms
+ GET /api/skin-hair/profile?userId=demo-user 200 in 111ms
+ GET /api/skin-hair/loved-products?userId=demo-user 200 in 115ms
+ GET /api/skin-hair/summary?userId=demo-user 200 in 117ms
+ GET /api/skin-hair/recommendations?userId=demo-user 200 in 915ms
+ GET /api/skin-hair/wellness-insights?userId=demo-user 200 in 1128ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1028ms (1348 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 1209ms
+ ✓ Compiled /api/skin-hair/wellness-insights/generate in 273ms (713 modules)
+ POST /api/skin-hair/wellness-insights/generate 200 in 765ms
+ ✓ Compiled /api/skin-hair/summary in 101ms (716 modules)
+ GET /api/skin-hair/summary?userId=demo-user 200 in 309ms
