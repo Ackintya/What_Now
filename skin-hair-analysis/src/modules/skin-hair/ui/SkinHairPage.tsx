@@ -374,7 +374,7 @@ export function SkinHairPage() {
 
         <SummaryCards summary={summary} loading={initializing} />
         <div className="module-card">
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {sectionButtons.map((section) => {
               const active = activeSection === section.key;
               return (
@@ -382,7 +382,7 @@ export function SkinHairPage() {
                   key={section.key}
                   type="button"
                   onClick={() => setActiveSection(section.key)}
-                  className={`px-3 py-2 rounded-lg border text-sm transition ${
+                  className={`w-full px-4 py-3 rounded-lg border text-base font-medium transition ${
                     active
                       ? "border-doom-accent bg-doom-accent/20 text-doom-accent"
                       : "border-doom-primary/30 text-doom-text hover:bg-doom-bg/50"
