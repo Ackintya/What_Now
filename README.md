@@ -1,4 +1,4 @@
-# WellBeing - Comprehensive Wellness Application
+# WhatNow - Comprehensive Wellness Application
 
 A microservices-based wellness platform integrating fitness tracking, nutrition planning, restaurant discovery, and skin/hair analysis.
 
@@ -7,7 +7,7 @@ A microservices-based wellness platform integrating fitness tracking, nutrition 
 WellBeing uses a **microservices architecture** with 4 independent modules sharing JWT authentication:
 
 ```
-Wats_Next/
+What_Now/
 ├── base/                       # Main app (port 3000)
 │   ├── Authentication system (JWT)
 │   ├── Fitness tracker with MediaPipe Pose
