@@ -607,11 +607,170 @@ poseRef.current = new Pose({...});
 
 **Repository**: github.com:charithcherry/NowWhat.git
 
-**Last Updated**: March 8, 2026
+**Last Updated**: March 9, 2026
 
-**Current Status**: All 4 microservices integrated with unified navigation and profile management
+**Current Status**: 6 microservices + community, unified navigation, WellBeing Agent chat across all services
 
-## Recent Updates (Current Session)
+## Session Updates — March 12, 2026
+
+### Fitness Page — Full Agent Redesign
+
+#### Problem
+- `gemini-3.1-pro-preview` model doesn't exist → 500 errors on master + generate routes
+- Master agent only sending last 6 messages → repetitive, forgetful conversations
+- `generate` route was synchronous (blocked conversation for 30–60s during generation)
+- No job queue → no status tracking, no feedback loop for parse/test failures
+- No chat log UI → user couldn't see conversation
+
+#### New Architecture
+
+**New files:**
+- `base/src/lib/video-agents/agents.ts` — shared Gemini helper, prompts (CODE_SYSTEM, SIM_SYSTEM), parseCodeResponse, parseSimData, runTester. All models set to `gemini-2.5-flash`.
+- `base/src/lib/video-agents/jobQueue.ts` — in-memory job store (globalThis._jobQueue, survives HMR), async pipeline: code+sim parallel → parse → tester retry loop (up to 3 attempts). Parse errors and test failures both feed back to code agent.
+- `base/src/app/api/video-agents/job/[jobId]/route.ts` — NEW GET endpoint, client polls every 2s
+
+**Modified files:**
+- `base/src/app/api/video-agents/generate/route.ts` — now just calls `createJob` + `runJobPipeline` (fire-and-forget), returns `{ jobId }` immediately
+- `base/src/app/api/video-agents/master/route.ts` — receives full conversation history + jobStatus every call; builds complete history string in prompt; `responseMimeType: 'application/json'` for clean JSON; no responseSchema (causes "Here is the JSON" garbage)
+- `base/src/app/fitness/page.tsx` — polling via `setInterval(2s)`, full `conversationHistoryRef` sent every master call, chat log UI (scrollable, auto-scroll), job status display
+
+#### Key Design Decisions
+- **Full conversation history** sent every call (standard chatbot pattern) — master never repeats itself
+- **Job queue** in-memory Map on `globalThis._jobQueue` — persists across Next.js HMR in dev
+- **Fire-and-forget** pipeline: `runJobPipeline(jobId)` called without await in route handler — Node.js event loop completes it
+- **Frame snapshots** (every 6s during exercise) are silent coaching cues — not added to chat log, but added to conversation history so master has context
+- **Master model**: `gemini-2.5-flash` with `responseMimeType: 'application/json'` (no schema) — clean JSON, no garbage text
+- **Code/sim models**: `gemini-2.5-flash` (NOT pro — `gemini-3.1-pro-preview` doesn't exist)
+
+#### MongoDB TLS Fix
+- Node 22 + MongoDB Atlas TLS handshake error (`tlsv1 alert internal error`)
+- Fix: `const options = { tlsInsecure: true }` in `base/src/lib/mongodb.ts`
+- Note: `globalThis._mongoClientPromise` cache means hot reload doesn't pick up options change — must restart server after edit
+
+#### Live Pipeline Log UI
+- Added collapsible "Pipeline Log" panel to fitness page
+- Appears as soon as a job starts, updates live every 2s via the existing job poll
+- Collapsed by default, expandable — shows all job log entries with line numbers
+- Color-coded: red = error/fail, green = pass/ready/complete, grey = normal steps
+- Auto-scrolls to latest entry
+- State: `jobLog`, `showJobLog`, `jobLogEndRef` added to page.tsx
+- Log data comes from `job.log` in the `/api/video-agents/job/[jobId]` poll response
+
+## Session Updates — March 13, 2026
+
+### Fitness Agent — Bug Fixes & Architecture Shift
+
+#### Echo Loop (Conversation Corruption) — Fixed
+- Root cause: `recognition.onend` was restarting the mic even when `speakMaster` had just stopped it, allowing TTS audio to be captured as user input
+- Fix 1: Added `isSpeakingRef` — set `true` on speak start, `false` after 600ms post-speech end
+- Fix 2: `recognition.onend` checks `isSpeakingRef.current` before restarting — mic only restarts after the speaking delay
+- Fix 3: `recognition.onresult` discards results while `isSpeakingRef.current === true`
+- Also: `if (isExerciseActiveRef.current) return` added — mic ignored during exercise
+
+#### Tester Failing (Zero Reps) — Fixed via Spec Engine Architecture
+The user refactored the pipeline from raw code generation to a **spec-based engine**:
+
+**New files:**
+- `base/src/lib/video-agents/specEngine.ts` — defines `AnalyzerSpec` type, interprets specs into exercise analyzers
+- Agents now import `SPEC_MODEL`, `SPEC_SYSTEM`, `parseAnalyzerResponse` from agents.ts
+
+**New pipeline order (serial, not parallel):**
+1. **Sim agent first** — generates 30 frames, extracts angle ranges
+2. **Spec agent second** — receives actual angle ranges from sim data, generates spec calibrated to those ranges
+3. **Tester** — validates spec against sim frames, retries with diagnostic feedback
+
+**Key insight:** Running sim first and feeding angle ranges to spec agent solves the "thresholds inverted" problem. The spec agent now knows `leftElbow: 90°–165°` and can set valid thresholds within those ranges.
+
+**Retry prompt improvements:**
+- `buildRetryPrompt()` includes actual sim angle stats + explicit warnings (e.g. "elbow never goes below 90°, don't use threshold < 30°")
+- Angle stats logged in pipeline UI on first failure
+
+#### Chat Overlay on Camera
+- Removed chat log from above-camera position
+- Last 4 messages shown as gradient overlay at the bottom of the camera view
+- `pointer-events-none` so it doesn't interfere with camera interaction
+
+#### Sim JSON Truncation Fix
+- Sim agent now uses `jsonMode=true` + `maxOutputTokens: 16384`
+
+#### Pipeline Log Page
+- `/fitness/logs` — dedicated page, polls `/api/video-agents/jobs` (all jobs), live updates every 2s
+- Color-coded log entries, expandable per job, auto-expands active jobs
+- Status pill on fitness page links to logs page in new tab
+
+#### Layout Fix
+- `.top-bar` made `sticky top-16 z-40` — always below nav bar, never overlaps
+- Camera height reduced from 70vh → 55vh to fit all content in viewport
+
+## Session Updates — March 9, 2026
+
+### App Branding
+- Renamed app to **What Now?** across all services
+- Added logo (logo.jpg) to all service navigation bars with `mix-blend-screen` for background removal
+- Updated page title in base layout
+
+### Homepage Redesign (BetterMe-style)
+- Full-screen slider with numbered circle buttons (1–6) bottom-right
+- Images/videos cover entire screen as background with dark overlay gradient
+- Slide transitions on number click (horizontal CSS transform)
+- 6 screens: Fitness, Nutrition, Skin Analysis, Hair Analysis, Find Restaurants, Community
+
+### Navigation Fixes
+- Physical Fitness logo reloads `/fitness` (uses `<a>` not `<Link>`)
+- Skin & Hair logo reloads `http://localhost:3002`
+- All navs use `getHref()` helper (no stale closures)
+- Community added to all service navs
+
+### WellBeing Agent Chat
+- Floating draggable robot sticker on all 6 services
+- On every click: rebuilds profile from MongoDB (past 2 days), saves to `agent_profile_cache` collection
+- Profile sources: users, userProfiles, nutrition_profiles, generated_recipes, saved_recipes, pantry_items, skin_hair_profiles, loved_products, favorites, clicks, yelp-insights, nutrition_insight_memory, community-posts, community-comments, community-moods, community-events, community-connections
+- Age calculated server-side (proper month/day boundary check)
+- Gemini function calling (tools): `get_user_data` tool queries any allowed MongoDB collection
+- Chat history persisted in `agent_chats` MongoDB collection — synced across all services
+- localStorage as fast local cache per origin (24hr TTL)
+- Profile context saved to `agent_profile_cache` (shared across all service ports via MongoDB)
+- On logout: clears all `wb_agent_profile_*` from localStorage
+
+### Gemini API
+- Old key (`AIzaSyDwRs6uRfbPMiJ7XE56iXrn-R9Z3rf_zSw`) was leaked via committed docs files — revoked
+- New key in all `.env.local` files (gitignored)
+- Model updated to `gemini-2.5-flash` (primary) — `gemini-2.0-flash` no longer available for new keys
+- All credentials redacted from all docs files
+
+### ElevenLabs Voice (Fitness)
+- Switched from Web Speech API to ElevenLabs TTS (`eleven_turbo_v2_5` model)
+- Sarah voice (EXAVITQu4vr4xnSDxMaL) — clear coaching voice
+- Fixed stuck promise bug: `stop()` now resolves pending promise so VoiceFeedbackManager doesn't freeze
+- AbortController cancels in-flight fetches on stop
+- Fallback to Web Speech API on any error
+
+### Community Microservice Integration
+- Frontend: port 3006, Backend: port 3005
+- Same JWT cookie auth pattern as nutrition-wellness
+- Server-side `getCurrentUser()` in page.tsx → passes `userId`/`userName` as props to `CommunityPage`
+- Navigation matches all other services
+- AgentChat sticker added with community backend agent routes
+- MongoDB collections: community-posts, community-comments, community-moods, community-events, community-connections
+
+### Port Reference (Updated)
+| Service | Port |
+|---|---|
+| Base App | 3000 |
+| Yelp Backend | 3001 |
+| Skin-Hair Analysis | 3002 |
+| Nutrition Wellness | 3003 |
+| Yelp Frontend | 3004 |
+| Community Backend | 3005 |
+| Community Frontend | 3006 |
+
+### Security Fixes
+- All leaked credentials redacted from `base/docs/` and `docs/` markdown files
+- `.env.local.example` files replaced real MongoDB creds with placeholders
+- `.env.local` files confirmed gitignored — never committed
+- Yelp API key added to `nutrition-yelp/backend/.env.local`
+
+## Recent Updates (Previous Session)
 
 ### Microservices Integration
 

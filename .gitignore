@@ -71,3 +71,8 @@ __pycache__/
 
 # OS
 Thumbs.db
+
+
+
+exp_harness/
+experimental/

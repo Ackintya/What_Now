@@ -3,572 +3,502 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { FitnessNavigation } from "@/components/FitnessNavigation";
 import { WebcamCapture } from "@/components/WebcamCapture";
-import { BicepCurlAnalyzer, type BicepCurlMetrics } from "@/lib/BicepCurlAnalyzer";
-import { LateralRaisesAnalyzer, type LateralRaisesMetrics } from "@/lib/LateralRaisesAnalyzer";
-import { Play, Square, RotateCcw, FileText, Trash2, ChevronDown, Camera, CameraOff, Volume2, VolumeX, HelpCircle, X } from "lucide-react";
+import { Play, Square, RotateCcw, Camera, CameraOff, Volume2, VolumeX, X } from "lucide-react";
 import {
   VoiceFeedbackManager,
   ElevenLabsVoice,
-  BICEP_CURL_MESSAGES,
-  LATERAL_RAISE_MESSAGES,
   getRepCountMessage,
-  getRandomEncouragement,
   SESSION_MESSAGES,
   VOICE_FEEDBACK_SETTINGS
 } from "@/lib/voice";
 import { useAuth } from "@/hooks/useAuth";
+import { precomputeFrame, compileAnalyzer, type AnalysisState, type AnalysisResult } from "@/lib/video-agents/precompute";
 import "./fitness.css";
 
-type ExerciseType = 'bicep-curl' | 'lateral-raises';
+type AIStatus = 'idle' | 'generating' | 'ready' | 'error';
 
-// Union type for metrics
-type ExerciseMetrics = BicepCurlMetrics | LateralRaisesMetrics;
+interface ChatMessage {
+  role: 'user' | 'coach';
+  text: string;
+}
+
+interface ConvEntry {
+  role: string;
+  text: string;
+}
 
 export default function FitnessPage() {
   const { user } = useAuth();
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseType>('bicep-curl');
+
+  // ── Camera & exercise state ────────────────────────────────────────────────
   const [isExerciseActive, setIsExerciseActive] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [showInstructionsModal, setShowInstructionsModal] = useState(false);
+  const isExerciseActiveRef = useRef(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraCommand, setCameraCommand] = useState<'start' | 'stop' | null>(null);
-  const isExerciseActiveRef = useRef(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [voiceVolume, setVoiceVolume] = useState(VOICE_FEEDBACK_SETTINGS.DEFAULT_VOLUME);
-  const [metrics, setMetrics] = useState<ExerciseMetrics>({
-    repCount: 0,
-    currentAngle: { left: 180, right: 180 },
-    formScore: 0,
-    postureScore: 0,
-    armPositionScore: 0,
-    visibilityScore: 0,
-    feedback: [],
-    isInValidPosition: false,
-    phase: 'down',
-  });
 
-  const bicepAnalyzerRef = useRef<BicepCurlAnalyzer | null>(null);
-  const lateralAnalyzerRef = useRef<LateralRaisesAnalyzer | null>(null);
+  // ── Voice ─────────────────────────────────────────────────────────────────
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const voiceManagerRef = useRef<VoiceFeedbackManager | null>(null);
   const lastRepCountRef = useRef(0);
-  const lastPhaseRef = useRef<'up' | 'down' | 'neutral'>('down');
-  const lastPostureWarningRef = useRef(0);
-  const lastElbowWarningRef = useRef(0);
-  const lastHeightWarningRef = useRef(0);
-  const lastLegBendWarningRef = useRef(0);
-  const lastArmsHighWarningRef = useRef(0);
+  const lastFormWarningRef = useRef(0);
 
-  // Initialize bicep curl analyzer with logging callback
-  if (!bicepAnalyzerRef.current) {
-    bicepAnalyzerRef.current = new BicepCurlAnalyzer(async (message: string) => {
-      try {
-        await fetch('/api/log', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ message }),
-        });
-      } catch (error) {
-        console.error('Failed to send log to API:', error);
-      }
-    });
-  }
-
-  // Initialize lateral raises analyzer with logging callback
-  if (!lateralAnalyzerRef.current) {
-    lateralAnalyzerRef.current = new LateralRaisesAnalyzer(async (message: string) => {
-      try {
-        await fetch('/api/log', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ message }),
-        });
-      } catch (error) {
-        console.error('Failed to send log to API:', error);
-      }
-    });
-  }
-
-  // Initialize voice feedback manager
   useEffect(() => {
     if (typeof window !== 'undefined' && !voiceManagerRef.current) {
-      console.log('🎤 Initializing ElevenLabs voice feedback system...');
-
-      const voiceProvider = new ElevenLabsVoice({
+      const provider = new ElevenLabsVoice({
         apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
-        volume: voiceVolume,
-        rate: 1.0,
-        pitch: 1.0,
-        language: 'en-US',
+        volume: VOICE_FEEDBACK_SETTINGS.DEFAULT_VOLUME,
+        rate: 1.0, pitch: 1.0, language: 'en-US',
       });
-
-      console.log(`🔧 ElevenLabs Voice config - Volume: ${voiceVolume}, Model: eleven_flash_v2_5`);
-
-      voiceManagerRef.current = new VoiceFeedbackManager(voiceProvider, {
+      voiceManagerRef.current = new VoiceFeedbackManager(provider, {
         minMessageInterval: VOICE_FEEDBACK_SETTINGS.MIN_MESSAGE_INTERVAL,
         maxQueueSize: VOICE_FEEDBACK_SETTINGS.MAX_QUEUE_SIZE,
         priorityInterrupts: true,
       });
-
-      console.log(`📋 Voice manager config - Min interval: ${VOICE_FEEDBACK_SETTINGS.MIN_MESSAGE_INTERVAL}ms, Max queue: ${VOICE_FEEDBACK_SETTINGS.MAX_QUEUE_SIZE}, Priority interrupts: true`);
-
-      if (voiceEnabled) {
-        console.log('🔊 Voice feedback enabled');
-        voiceManagerRef.current.enable();
-      } else {
-        console.log('🔇 Voice feedback disabled');
-        voiceManagerRef.current.disable();
-      }
+      if (voiceEnabled) voiceManagerRef.current.enable();
+      else voiceManagerRef.current.disable();
     }
-  }, [voiceVolume, voiceEnabled]);
+  }, []);
 
-  // Update voice volume when changed
   useEffect(() => {
     if (voiceManagerRef.current) {
-      voiceManagerRef.current.setVolume(voiceVolume);
-    }
-  }, [voiceVolume]);
-
-  // Enable/disable voice when state changes
-  useEffect(() => {
-    if (voiceManagerRef.current) {
-      if (voiceEnabled) {
-        voiceManagerRef.current.enable();
-      } else {
-        voiceManagerRef.current.disable();
-      }
+      if (voiceEnabled) voiceManagerRef.current.enable();
+      else { voiceManagerRef.current.disable(); voiceManagerRef.current.stopAndClear(); }
     }
   }, [voiceEnabled]);
 
-  const handlePoseDetected = useCallback((landmarks: any) => {
-    const analyzer = selectedExercise === 'bicep-curl' ? bicepAnalyzerRef.current : lateralAnalyzerRef.current;
-
-    console.log(`🔍 handlePoseDetected called | Exercise: ${selectedExercise} | Active (ref): ${isExerciseActiveRef.current} | Analyzer exists: ${!!analyzer} | Landmarks: ${landmarks?.length || 0}`);
-
-    if (!isExerciseActiveRef.current || !analyzer) {
-      console.log(`⚠️ Skipping analysis - Exercise Active: ${isExerciseActiveRef.current}, Analyzer: ${!!analyzer}`);
-      return;
-    }
-
-    console.log("✅ Calling analyzer.analyze()...");
-    const newMetrics = analyzer.analyze(landmarks);
-    setMetrics(newMetrics);
-
-    // Voice feedback logic
-    if (voiceManagerRef.current && voiceEnabled) {
-      const now = Date.now();
-      console.log(`🎙️ Voice feedback active - Rep: ${newMetrics.repCount}, Posture: ${newMetrics.postureScore}, Phase: ${newMetrics.phase}`);
-
-      // Rep count announcements (high priority)
-      if (newMetrics.repCount > lastRepCountRef.current) {
-        console.log(`🎯 Rep count increased: ${lastRepCountRef.current} -> ${newMetrics.repCount}`);
-        const repMessage = getRepCountMessage(newMetrics.repCount);
-        if (repMessage.text) {
-          // Clear any pending rep count messages from the queue before adding the new one
-          // This ensures only the CURRENT rep count is announced, never stale/old reps
-          voiceManagerRef.current.clearRepCountMessages();
-          console.log(`📢 VOICE: Queueing rep count - "${repMessage.text}" with priority ${repMessage.priority}`);
-          voiceManagerRef.current.queueMessage(repMessage.text, repMessage.priority);
-        }
-
-        // Encouragement every N reps
-        if (newMetrics.repCount % VOICE_FEEDBACK_SETTINGS.ENCOURAGEMENT_EVERY_N_REPS === 0) {
-          const encouragement = getRandomEncouragement(
-            selectedExercise === 'bicep-curl' ? 'bicep' : 'lateral'
-          );
-          console.log(`📢 VOICE: Queueing encouragement - "${encouragement.text}"`);
-          voiceManagerRef.current.queueMessage(encouragement.text, encouragement.priority);
-        }
-
-        lastRepCountRef.current = newMetrics.repCount;
-      }
-
-      // Posture warnings (high priority, rate limited)
-      if (newMetrics.postureScore < 70 && now - lastPostureWarningRef.current > 8000) {
-        const postureMessage = selectedExercise === 'bicep-curl'
-          ? BICEP_CURL_MESSAGES.STAND_STRAIGHT
-          : LATERAL_RAISE_MESSAGES.STAND_STRAIGHT;
-        console.log(`📢 VOICE: Queueing posture warning - "${postureMessage.text}" with priority ${postureMessage.priority}`);
-        voiceManagerRef.current.queueMessage(postureMessage.text, postureMessage.priority);
-        lastPostureWarningRef.current = now;
-      }
-
-      // LEG BENDING DETECTION (Both exercises - HIGH priority)
-      if (newMetrics.legBending && newMetrics.legBending.hasLegBend) {
-        const timeSinceLastWarning = now - lastLegBendWarningRef.current;
-        console.log(`🦵 LEG BEND DETECTED | Left knee: ${newMetrics.legBending.leftKneeAngle}° | Right knee: ${newMetrics.legBending.rightKneeAngle}° | Time since last warning: ${timeSinceLastWarning}ms | Rate limit: ${VOICE_FEEDBACK_SETTINGS.LEG_BEND_RATE_LIMIT}ms`);
-
-        if (timeSinceLastWarning > VOICE_FEEDBACK_SETTINGS.LEG_BEND_RATE_LIMIT) {
-          const legBendMessage = selectedExercise === 'bicep-curl'
-            ? BICEP_CURL_MESSAGES.LEGS_BENT
-            : LATERAL_RAISE_MESSAGES.LEGS_BENT;
-
-          console.log(`📢 VOICE: Queueing leg bend message - "${legBendMessage.text}" with priority ${legBendMessage.priority}`);
-          console.log(`🎤 Voice Manager State - Enabled: ${voiceManagerRef.current.isVoiceEnabled()}, Speaking: ${voiceManagerRef.current.isSpeakingNow()}, Queue size: ${voiceManagerRef.current.getQueueSize()}`);
-
-          voiceManagerRef.current.queueMessage(
-            legBendMessage.text,
-            legBendMessage.priority
-          );
-          lastLegBendWarningRef.current = now;
-
-          console.log(`✅ Leg bend message queued successfully at ${now}`);
-        } else {
-          console.log(`⏱️ Leg bend voice feedback RATE LIMITED | Time since last: ${timeSinceLastWarning}ms | Need to wait: ${VOICE_FEEDBACK_SETTINGS.LEG_BEND_RATE_LIMIT - timeSinceLastWarning}ms more`);
-        }
-      } else if (newMetrics.legBending) {
-        console.log(`✅ Legs straight - Left: ${newMetrics.legBending.leftKneeAngle}° | Right: ${newMetrics.legBending.rightKneeAngle}°`);
-      }
-
-      // Exercise-specific feedback
-      if (selectedExercise === 'bicep-curl') {
-        const bicepMetrics = newMetrics as BicepCurlMetrics;
-        // Elbow position warnings (medium priority, rate limited)
-        if (bicepMetrics.armPositionScore < 70 && now - lastElbowWarningRef.current > 10000) {
-          console.log(`📢 VOICE: Queueing elbow position warning - "${BICEP_CURL_MESSAGES.ELBOWS_CLOSE.text}"`);
-          voiceManagerRef.current.queueMessage(
-            BICEP_CURL_MESSAGES.ELBOWS_CLOSE.text,
-            BICEP_CURL_MESSAGES.ELBOWS_CLOSE.priority
-          );
-          lastElbowWarningRef.current = now;
-        }
-
-        console.log(`📊 Metrics updated - Reps: ${bicepMetrics.repCount}, Left: ${bicepMetrics.currentAngle.left}°, Right: ${bicepMetrics.currentAngle.right}°`);
-      } else {
-        const lateralMetrics = newMetrics as LateralRaisesMetrics;
-
-        // Arm height warnings (medium priority, rate limited)
-        const avgEshAngle = (lateralMetrics.eshAngles.left + lateralMetrics.eshAngles.right) / 2;
-
-        // ARMS TOO HIGH DETECTION (Lateral Raises only - HIGH priority)
-        if (avgEshAngle > VOICE_FEEDBACK_SETTINGS.LATERAL_ARMS_TOO_HIGH_THRESHOLD && newMetrics.phase === 'up') {
-          if (now - lastArmsHighWarningRef.current > VOICE_FEEDBACK_SETTINGS.ARMS_TOO_HIGH_RATE_LIMIT) {
-            console.log(`📢 VOICE: Queueing arms too high warning - "${LATERAL_RAISE_MESSAGES.ARMS_TOO_HIGH.text}"`);
-            voiceManagerRef.current.queueMessage(
-              LATERAL_RAISE_MESSAGES.ARMS_TOO_HIGH.text,
-              LATERAL_RAISE_MESSAGES.ARMS_TOO_HIGH.priority
-            );
-            lastArmsHighWarningRef.current = now;
-          }
-        }
-
-        // Original height warnings (medium priority)
-        if (now - lastHeightWarningRef.current > 10000) {
-          if (avgEshAngle < VOICE_FEEDBACK_SETTINGS.LATERAL_MIN_ANGLE && newMetrics.phase === 'up') {
-            console.log(`📢 VOICE: Queueing raise higher warning - "${LATERAL_RAISE_MESSAGES.RAISE_HIGHER.text}"`);
-            voiceManagerRef.current.queueMessage(
-              LATERAL_RAISE_MESSAGES.RAISE_HIGHER.text,
-              LATERAL_RAISE_MESSAGES.RAISE_HIGHER.priority
-            );
-            lastHeightWarningRef.current = now;
-          } else if (avgEshAngle > VOICE_FEEDBACK_SETTINGS.LATERAL_MAX_ANGLE) {
-            console.log(`📢 VOICE: Queueing too high warning - "${LATERAL_RAISE_MESSAGES.TOO_HIGH.text}"`);
-            voiceManagerRef.current.queueMessage(
-              LATERAL_RAISE_MESSAGES.TOO_HIGH.text,
-              LATERAL_RAISE_MESSAGES.TOO_HIGH.priority
-            );
-            lastHeightWarningRef.current = now;
-          }
-        }
-
-        console.log(`📊 Metrics updated - Reps: ${lateralMetrics.repCount}, Left ESH: ${lateralMetrics.eshAngles.left}°, Right ESH: ${lateralMetrics.eshAngles.right}°`);
-      }
-
-      // Phase changes (optional low priority)
-      if (newMetrics.phase !== lastPhaseRef.current) {
-        lastPhaseRef.current = newMetrics.phase;
-      }
-    }
-  }, [selectedExercise, voiceEnabled]);
-
-  const startExercise = () => {
-    if (!cameraActive) {
-      alert('Please turn on the camera first!');
-      return;
-    }
-    setIsExerciseActive(true);
-    isExerciseActiveRef.current = true;
-
-    // Reset appropriate analyzer
-    const analyzer = selectedExercise === 'bicep-curl' ? bicepAnalyzerRef.current : lateralAnalyzerRef.current;
-    if (analyzer) {
-      analyzer.reset();
-    }
-
-    // Reset voice feedback tracking
-    lastRepCountRef.current = 0;
-    lastPhaseRef.current = 'down';
-    lastPostureWarningRef.current = 0;
-    lastElbowWarningRef.current = 0;
-    lastHeightWarningRef.current = 0;
-    lastLegBendWarningRef.current = 0;
-    lastArmsHighWarningRef.current = 0;
-
-    // Voice feedback: workout started
-    if (voiceManagerRef.current && voiceEnabled) {
-      voiceManagerRef.current.queueMessage(
-        SESSION_MESSAGES.START.text,
-        SESSION_MESSAGES.START.priority
-      );
-    }
-
-    // Set initial metrics based on exercise type
-    if (selectedExercise === 'bicep-curl') {
-      setMetrics({
-        repCount: 0,
-        currentAngle: { left: 180, right: 180 },
-        formScore: 0,
-        postureScore: 0,
-        armPositionScore: 0,
-        visibilityScore: 0,
-        feedback: [],
-        isInValidPosition: false,
-        phase: 'down',
-      });
-    } else {
-      setMetrics({
-        repCount: 0,
-        eshAngles: { left: 0, right: 0 },
-        formScore: 0,
-        postureScore: 0,
-        armElevationScore: 0,
-        visibilityScore: 0,
-        feedback: [],
-        isInValidPosition: false,
-        phase: 'down',
-      });
-    }
-
-    console.log(`🏋️ ${selectedExercise === 'bicep-curl' ? 'Bicep Curl' : 'Lateral Raises'} Exercise Started - Logging to console and file`);
+  const speak = (text: string, priority: any = 'HIGH') => {
+    if (voiceManagerRef.current && voiceEnabled) voiceManagerRef.current.queueMessage(text, priority);
   };
 
-  const stopExercise = () => {
-    console.log('🛑 Stopping exercise and clearing memory...');
+  const isSpeakingRef = useRef(false);
 
+  const speakMaster = (text: string) => {
+    if (typeof window === 'undefined' || !text?.trim()) return;
+    // Stop mic immediately before speaking
+    isSpeakingRef.current = true;
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.05; utterance.pitch = 1.0; utterance.volume = 1.0;
+    utterance.onend = () => {
+      // Wait 600ms after speech fully ends before re-enabling mic
+      // This prevents the mic from capturing the tail end of TTS audio
+      setTimeout(() => {
+        isSpeakingRef.current = false;
+        if (recognitionRef.current) { try { recognitionRef.current.start(); } catch {} }
+      }, 600);
+    };
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // ── AI analyzer state ─────────────────────────────────────────────────────
+  const [aiStatus, setAiStatus] = useState<AIStatus>('idle');
+  const [aiExerciseName, setAiExerciseName] = useState('');
+  const [aiCameraInstructions, setAiCameraInstructions] = useState('');
+  const [aiTesterResult, setAiTesterResult] = useState<any>(null);
+  const aiAnalyzerFnRef = useRef<((frame: any, state: any) => AnalysisResult) | null>(null);
+  const aiAnalyzerStateRef = useRef<AnalysisState>({ phase: 'neutral', reps: 0 });
+  const [aiMetrics, setAiMetrics] = useState<AnalysisResult>({ reps: 0, phase: 'neutral', formIssues: [], isValidPosition: false });
+
+  // ── Job state ─────────────────────────────────────────────────────────────
+  const currentJobIdRef = useRef<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<string | null>(null);
+  const [jobStatusDetail, setJobStatusDetail] = useState<string>('');
+  const [jobLog, setJobLog] = useState<string[]>([]);
+  const [showJobLog, setShowJobLog] = useState(true);
+  const jobPollingRef = useRef<any>(null);
+  const jobStatusRef = useRef<string | null>(null); // for use inside closures
+  const jobLogEndRef = useRef<HTMLDivElement>(null);
+
+  // ── Conversation state ────────────────────────────────────────────────────
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [masterState, setMasterState] = useState('greeting');
+  const [sessionStarted, setSessionStarted] = useState(false);
+  const masterStateRef = useRef('greeting');
+  // Full conversation history — sent to master on every call (standard chatbot pattern)
+  const conversationHistoryRef = useRef<ConvEntry[]>([]);
+  const aiExerciseNameRef = useRef('');
+  const recognitionRef = useRef<any>(null);
+  const frameMonitorTimerRef = useRef<any>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef(false);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // ── Job polling ───────────────────────────────────────────────────────────
+  const stopJobPolling = () => {
+    if (jobPollingRef.current) {
+      clearInterval(jobPollingRef.current);
+      jobPollingRef.current = null;
+    }
+  };
+
+  const startJobPolling = (jobId: string) => {
+    stopJobPolling();
+    jobPollingRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/video-agents/job/${jobId}`);
+        if (!res.ok) return;
+        const job = await res.json();
+
+        setJobStatus(job.status);
+        jobStatusRef.current = job.status;
+        setJobStatusDetail(job.statusDetail || '');
+        setJobLog(job.log || []);
+        setTimeout(() => jobLogEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+
+        if (job.status === 'done' || job.status === 'failed') {
+          stopJobPolling();
+          currentJobIdRef.current = null;
+
+          if (job.status === 'done' && job.result) {
+            try {
+              aiAnalyzerFnRef.current = compileAnalyzer(job.result.spec);
+              setAiCameraInstructions(job.result.cameraInstructions);
+              setAiTesterResult(job.result.testerResult);
+              setAiStatus('ready');
+              masterStateRef.current = 'ready';
+              setMasterState('ready');
+              // Notify master — it will tell the user naturally
+              sendToMaster(
+                `[System: analyzer ready. Camera: ${job.result.cameraInstructions}]`,
+                undefined,
+                true
+              );
+            } catch (e: any) {
+              setAiStatus('error');
+              speakMaster('Sorry, had trouble loading the exercise code.');
+            }
+          } else if (job.status === 'failed') {
+            setAiStatus('error');
+            sendToMaster('[System: Exercise generation failed. Ask the user if they want to try again.]', undefined, true);
+          }
+        }
+      } catch (e) {
+        console.error('Job poll error:', e);
+      }
+    }, 2000);
+  };
+
+  // ── Send to master agent ──────────────────────────────────────────────────
+  const sendToMaster = async (
+    userMessage: string,
+    frameSnapshot?: any,
+    isSystemMsg = false
+  ) => {
+    if (!userMessage.trim() && !frameSnapshot) return;
+    // Prevent concurrent non-snapshot calls
+    if (!frameSnapshot && isSendingRef.current) return;
+    if (!frameSnapshot) isSendingRef.current = true;
+
+    // Add user message to chat log + history
+    if (userMessage && !isSystemMsg) {
+      setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+      conversationHistoryRef.current = [
+        ...conversationHistoryRef.current,
+        { role: 'user', text: userMessage },
+      ];
+    }
+
+    try {
+      const res = await fetch('/api/video-agents/master', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: userMessage || '',
+          // Send FULL conversation history every call — this is how chatbots maintain context
+          conversationHistory: conversationHistoryRef.current,
+          currentState: masterStateRef.current,
+          frameSnapshot: frameSnapshot || null,
+          exerciseName: aiExerciseNameRef.current || null,
+          jobStatus: jobStatusRef.current,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) { console.error('[Master] error:', data.error); return; }
+
+      if (data.response) {
+        speakMaster(data.response);
+        // Show in chat (not for frame snapshots — those are silent coaching cues)
+        if (!frameSnapshot) {
+          setMessages(prev => [...prev, { role: 'coach', text: data.response }]);
+        }
+        // Always add to history so context is maintained
+        conversationHistoryRef.current = [
+          ...conversationHistoryRef.current,
+          { role: 'assistant', text: data.response },
+        ];
+      }
+
+      masterStateRef.current = data.nextState;
+      setMasterState(data.nextState);
+
+      // Start generation — fire once, only if no job is running
+      if (
+        !isSystemMsg &&
+        data.action === 'generate_exercise' &&
+        data.exerciseName &&
+        !currentJobIdRef.current
+      ) {
+        aiExerciseNameRef.current = data.exerciseName;
+        setAiExerciseName(data.exerciseName);
+        startExerciseGeneration(data.exerciseName);
+      }
+
+    } catch (e) {
+      console.error('Master agent error:', e);
+    } finally {
+      if (!frameSnapshot) isSendingRef.current = false;
+    }
+  };
+
+  // ── Start exercise generation (async job) ─────────────────────────────────
+  const startExerciseGeneration = async (name: string) => {
+    if (currentJobIdRef.current) return; // already running
+    setAiStatus('generating');
+    setAiTesterResult(null);
+    aiAnalyzerFnRef.current = null;
+    aiAnalyzerStateRef.current = { phase: 'neutral', reps: 0 };
+
+    try {
+      const res = await fetch('/api/video-agents/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exerciseName: name }),
+      });
+      const { jobId, error } = await res.json();
+      if (!jobId) throw new Error(error || 'No jobId returned');
+
+      currentJobIdRef.current = jobId;
+      setJobStatus('queued');
+      jobStatusRef.current = 'queued';
+      setJobLog([]);
+      setShowJobLog(true);
+      startJobPolling(jobId);
+    } catch (e: any) {
+      setAiStatus('error');
+      console.error('Generate start error:', e);
+      speakMaster(`Sorry, couldn't start generating ${name}.`);
+    }
+  };
+
+  // ── Manual generate (text input) ─────────────────────────────────────────
+  const handleManualGenerate = async () => {
+    if (!aiExerciseName.trim()) return;
+    aiExerciseNameRef.current = aiExerciseName;
+    currentJobIdRef.current = null; // reset so it runs again
+    aiAnalyzerFnRef.current = null;
+    setJobStatus(null);
+    jobStatusRef.current = null;
+    await startExerciseGeneration(aiExerciseName);
+  };
+
+  // ── Speech recognition ───────────────────────────────────────────────────
+  const startListening = () => {
+    if (typeof window === 'undefined') return;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { speak("Speech recognition not supported. Please use Chrome."); return; }
+
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    let lastTranscript = '';
+    recognition.onresult = (event: any) => {
+      const result = event.results[event.results.length - 1];
+      if (!result.isFinal) return;
+      const transcript = result[0].transcript.trim();
+      if (!transcript || transcript === lastTranscript) return;
+      // Discard anything captured while the agent is speaking
+      if (isSpeakingRef.current) return;
+      if (isExerciseActiveRef.current) return;
+      lastTranscript = transcript;
+      setVoiceTranscript(transcript);
+      sendToMaster(transcript);
+    };
+    recognition.onerror = (event: any) => {
+      if (event.error !== 'no-speech') setIsListening(false);
+    };
+    recognition.onend = () => {
+      // Only restart if we stopped because of natural end, NOT because speakMaster paused it
+      if (recognitionRef.current === recognition && !isSpeakingRef.current) {
+        try { recognition.start(); } catch {}
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null;
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
+
+  const startSession = async () => {
+    setSessionStarted(true);
+    startListening();
+    await sendToMaster('Hello, I just opened the fitness assistant.');
+  };
+
+  const exitAIMode = () => {
+    stopListening();
+    stopJobPolling();
+    window.speechSynthesis?.cancel();
+    voiceManagerRef.current?.stopAndClear();
+    setSessionStarted(false);
     setIsExerciseActive(false);
     isExerciseActiveRef.current = false;
+    setAiStatus('idle');
+    setAiExerciseName('');
+    setAiTesterResult(null);
+    setAiCameraInstructions('');
+    aiAnalyzerFnRef.current = null;
+    aiAnalyzerStateRef.current = { phase: 'neutral', reps: 0 };
+    masterStateRef.current = 'greeting';
+    conversationHistoryRef.current = [];
+    currentJobIdRef.current = null;
+    setJobStatus(null);
+    jobStatusRef.current = null;
+    setJobStatusDetail('');
+    setJobLog([]);
+    setShowJobLog(false);
+    setMasterState('greeting');
+    setMessages([]);
+    setVoiceTranscript('');
+    setAiMetrics({ reps: 0, phase: 'neutral', formIssues: [], isValidPosition: false });
+  };
 
-    // Stop any ongoing voice feedback
-    if (voiceManagerRef.current) {
-      voiceManagerRef.current.stopAndClear();
-    }
+  useEffect(() => {
+    return () => {
+      stopListening();
+      stopJobPolling();
+      clearInterval(frameMonitorTimerRef.current);
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
 
-    // Memory cleanup: Reset both analyzers to clear accumulated data
-    console.log('🧹 Resetting analyzers to clear accumulated data...');
-    if (bicepAnalyzerRef.current) {
-      bicepAnalyzerRef.current.reset();
-      console.log('✅ Bicep curl analyzer reset');
-    }
-    if (lateralAnalyzerRef.current) {
-      lateralAnalyzerRef.current.reset();
-      console.log('✅ Lateral raises analyzer reset');
-    }
+  // ── Pose handler ─────────────────────────────────────────────────────────
+  const handlePoseDetected = useCallback((landmarks: any) => {
+    if (!isExerciseActiveRef.current || !aiAnalyzerFnRef.current) return;
+    try {
+      const frame = precomputeFrame(landmarks);
+      const result = aiAnalyzerFnRef.current(frame, aiAnalyzerStateRef.current);
+      aiAnalyzerStateRef.current.phase = (result.phase as any) ?? aiAnalyzerStateRef.current.phase;
+      aiAnalyzerStateRef.current.reps  = result.reps ?? aiAnalyzerStateRef.current.reps;
+      setAiMetrics(result);
 
-    // Clear metrics state
-    console.log('🧹 Clearing metrics state...');
-    resetExercise();
-    console.log('✅ Metrics cleared');
-
-    // Trigger garbage collection hint (if available)
-    if ((window as any).gc) {
-      try {
-        (window as any).gc();
-        console.log('✅ Garbage collection triggered - memory cleared');
-      } catch (e) {
-        console.log('⚠️ Garbage collection failed:', e);
+      if (voiceManagerRef.current && voiceEnabled) {
+        const now = Date.now();
+        if (result.reps > lastRepCountRef.current) {
+          const msg = getRepCountMessage(result.reps);
+          if (msg.text) { voiceManagerRef.current.clearRepCountMessages(); speak(msg.text, msg.priority); }
+          lastRepCountRef.current = result.reps;
+        }
+        if (now - lastFormWarningRef.current > 6000) {
+          const high = result.formIssues?.find(i => i.severity === 'HIGH');
+          if (high) { speak(high.message); lastFormWarningRef.current = now; }
+        }
       }
-    } else {
-      console.log('ℹ️ Manual garbage collection not available (run Chrome with --js-flags="--expose-gc" to enable)');
-    }
+    } catch (e) { console.error('AI analyzer error:', e); }
+  }, [voiceEnabled]);
 
-    // Voice feedback: workout paused
-    if (voiceManagerRef.current && voiceEnabled) {
-      voiceManagerRef.current.queueMessage(
-        SESSION_MESSAGES.PAUSE.text,
-        SESSION_MESSAGES.PAUSE.priority
-      );
-    }
-
-    console.log('⏸️ Exercise stopped - Memory cleanup complete');
+  // ── Exercise controls ─────────────────────────────────────────────────────
+  const startExercise = () => {
+    if (!cameraActive) { speakMaster("Please turn on the camera first."); return; }
+    if (!aiAnalyzerFnRef.current) { speakMaster("Please choose an exercise first."); return; }
+    stopListening();
+    setIsExerciseActive(true);
+    isExerciseActiveRef.current = true;
+    aiAnalyzerStateRef.current = { phase: 'neutral', reps: 0 };
+    setAiMetrics({ reps: 0, phase: 'neutral', formIssues: [], isValidPosition: false });
+    lastRepCountRef.current = 0;
+    lastFormWarningRef.current = 0;
+    masterStateRef.current = 'exercising';
+    setMasterState('exercising');
+    speak(SESSION_MESSAGES.START.text, SESSION_MESSAGES.START.priority);
   };
 
-  const handleCameraStateChange = (active: boolean) => {
-    setCameraActive(active);
-  };
-
-  const startCamera = () => {
-    setCameraCommand('start');
-    setTimeout(() => setCameraCommand(null), 100);
-  };
-
-  const stopCamera = () => {
-    setCameraCommand('stop');
-    setTimeout(() => setCameraCommand(null), 100);
+  const stopExercise = async () => {
+    setIsExerciseActive(false);
+    isExerciseActiveRef.current = false;
+    voiceManagerRef.current?.stopAndClear();
+    masterStateRef.current = 'reviewing';
+    setMasterState('reviewing');
+    const reps = aiAnalyzerStateRef.current.reps;
+    await sendToMaster(`[System: set complete — ${reps} reps. Give summary and ask what's next.]`, undefined, true);
+    startListening();
+    speak(SESSION_MESSAGES.PAUSE.text, SESSION_MESSAGES.PAUSE.priority);
   };
 
   const resetExercise = () => {
-    const analyzer = selectedExercise === 'bicep-curl' ? bicepAnalyzerRef.current : lateralAnalyzerRef.current;
-    if (analyzer) {
-      analyzer.reset();
-    }
-
-    if (selectedExercise === 'bicep-curl') {
-      setMetrics({
-        repCount: 0,
-        currentAngle: { left: 180, right: 180 },
-        formScore: 0,
-        postureScore: 0,
-        armPositionScore: 0,
-        visibilityScore: 0,
-        feedback: [],
-        isInValidPosition: false,
-        phase: 'down',
-      });
-    } else {
-      setMetrics({
-        repCount: 0,
-        eshAngles: { left: 0, right: 0 },
-        formScore: 0,
-        postureScore: 0,
-        armElevationScore: 0,
-        visibilityScore: 0,
-        feedback: [],
-        isInValidPosition: false,
-        phase: 'down',
-      });
-    }
-
-    console.log('🔄 Exercise Reset');
+    aiAnalyzerStateRef.current = { phase: 'neutral', reps: 0 };
+    setAiMetrics({ reps: 0, phase: 'neutral', formIssues: [], isValidPosition: false });
+    lastRepCountRef.current = 0;
   };
+
+  const startCamera = () => { setCameraCommand('start'); setTimeout(() => setCameraCommand(null), 100); };
+  const stopCamera  = () => { setCameraCommand('stop');  setTimeout(() => setCameraCommand(null), 100); };
 
   const saveSession = async () => {
     try {
-      const exerciseName = selectedExercise === 'bicep-curl' ? 'Bicep Curl' : 'Lateral Raises';
-
-      let sessionData;
-      if (selectedExercise === 'bicep-curl') {
-        const bicepMetrics = metrics as BicepCurlMetrics;
-        sessionData = {
-          exercise: exerciseName,
-          reps: bicepMetrics.repCount,
-          duration: 0,
-          formScore: bicepMetrics.formScore,
-          postureScore: bicepMetrics.postureScore,
-          armPositionScore: bicepMetrics.armPositionScore,
-          visibilityScore: bicepMetrics.visibilityScore,
-          avgElbowAngle: (bicepMetrics.currentAngle.left + bicepMetrics.currentAngle.right) / 2,
-        };
-      } else {
-        const lateralMetrics = metrics as LateralRaisesMetrics;
-        sessionData = {
-          exercise: exerciseName,
-          reps: lateralMetrics.repCount,
-          duration: 0,
-          formScore: lateralMetrics.formScore,
-          postureScore: lateralMetrics.postureScore,
-          armElevationScore: lateralMetrics.armElevationScore,
-          visibilityScore: lateralMetrics.visibilityScore,
-          avgESHAngle: (lateralMetrics.eshAngles.left + lateralMetrics.eshAngles.right) / 2,
-        };
-      }
-
-      const response = await fetch('/api/sessions', {
+      await fetch('/api/sessions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sessionData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exercise: aiExerciseName || 'AI Exercise',
+          reps: aiAnalyzerStateRef.current.reps,
+          duration: 0,
+          formScore: aiMetrics.isValidPosition ? 100 : 50,
+        }),
       });
-
-      if (response.ok) {
-        if (voiceManagerRef.current && voiceEnabled) {
-          voiceManagerRef.current.queueMessage(
-            SESSION_MESSAGES.COMPLETE.text,
-            SESSION_MESSAGES.COMPLETE.priority
-          );
-        }
-
-        alert(`Session saved! Reps: ${metrics.repCount}, Form Score: ${metrics.formScore}`);
-        resetExercise();
-      } else {
-        alert('Failed to save session. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error saving session:', error);
-      alert('Failed to save session. Please try again.');
-    }
+      speak("Session saved!");
+      resetExercise();
+    } catch (e) { console.error('Save session error:', e); }
   };
 
-  const viewLogs = async () => {
-    try {
-      const response = await fetch('/api/log');
-      const data = await response.json();
+  // Job status label for display
+  const jobStatusLabel = jobStatus ? ({
+    queued: 'Queued...',
+    running: 'Generating...',
+    testing: 'Testing...',
+    retrying: 'Retrying...',
+    done: 'Ready ✓',
+    failed: 'Failed',
+  } as Record<string, string>)[jobStatus] || jobStatus : null;
 
-      if (data.logs && data.logs.length > 0) {
-        console.log('=== EXERCISE LOGS ===');
-        data.logs.forEach((log: string) => console.log(log));
-        console.log('===================');
-        alert(`Logs displayed in console. Total: ${data.logs.length} entries`);
-      } else {
-        alert('No logs found. Start exercising to generate logs!');
-      }
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-      alert('Failed to fetch logs.');
-    }
-  };
-
-  const clearLogs = async () => {
-    if (!confirm('Are you sure you want to clear all logs?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/log', {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        alert('Logs cleared successfully!');
-        console.log('📝 All exercise logs have been cleared');
-      } else {
-        alert('Failed to clear logs.');
-      }
-    } catch (error) {
-      console.error('Error clearing logs:', error);
-      alert('Failed to clear logs.');
-    }
-  };
-
-  const metricsOverlay =
-    selectedExercise === 'bicep-curl'
-      ? {
-          reps: metrics.repCount,
-          formScore: metrics.formScore,
-          postureScore: metrics.postureScore,
-          armMetricLabel: 'Arm Position',
-          armMetricScore: 'armPositionScore' in metrics ? metrics.armPositionScore : 0,
-          leftAngleLabel: 'Left Elbow',
-          leftAngleValue: 'currentAngle' in metrics ? metrics.currentAngle.left : 0,
-          rightAngleLabel: 'Right Elbow',
-          rightAngleValue: 'currentAngle' in metrics ? metrics.currentAngle.right : 0,
-          phaseLabel: metrics.phase === 'up' ? 'Curling' : 'Lowering',
-        }
-      : {
-          reps: metrics.repCount,
-          formScore: metrics.formScore,
-          postureScore: metrics.postureScore,
-          armMetricLabel: 'Arm Elevation',
-          armMetricScore: 'armElevationScore' in metrics ? metrics.armElevationScore : 0,
-          leftAngleLabel: 'Left Shoulder',
-          leftAngleValue: 'eshAngles' in metrics && metrics.eshAngles ? metrics.eshAngles.left : 0,
-          rightAngleLabel: 'Right Shoulder',
-          rightAngleValue: 'eshAngles' in metrics && metrics.eshAngles ? metrics.eshAngles.right : 0,
-          phaseLabel: metrics.phase === 'up' ? 'Raising' : 'Lowering',
-        };
+  // ── Tap to start overlay ─────────────────────────────────────────────────
+  if (!sessionStarted) {
+    return (
+      <>
+        <FitnessNavigation user={user} />
+        <main className="min-h-screen bg-doom-bg pt-16 flex items-center justify-center">
+          <button
+            onClick={startSession}
+            className="flex flex-col items-center gap-4 p-10 bg-black border border-[#00ff9f33] rounded-2xl hover:border-[#00ff9f] transition-colors group"
+          >
+            <div className="w-16 h-16 rounded-full border-2 border-[#00ff9f] flex items-center justify-center group-hover:bg-[#00ff9f11] transition-colors">
+              <span className="text-3xl">🎙️</span>
+            </div>
+            <div className="text-[#00ff9f] text-xl font-bold">Tap to Start</div>
+            <div className="text-[#555] text-sm">Your AI fitness coach will greet you</div>
+          </button>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -577,198 +507,200 @@ export default function FitnessPage() {
       <main className={`min-h-screen bg-doom-bg ${!isExerciseActive ? 'pt-16' : 'pt-0'} pb-8 max-w-full overflow-x-hidden`}>
         <div className="px-3 sm:px-4 py-4 pb-8 max-w-full">
 
+          {/* Top bar */}
           <div className="top-bar">
             <div className="exercise-selector-container">
-              <label className="exercise-selector-label">Exercise Tracker:</label>
-              <div className="exercise-dropdown">
-                <select
-                  value={selectedExercise}
-                  onChange={(e) => {
-                    const newExercise = e.target.value as ExerciseType;
-                    setSelectedExercise(newExercise);
-
-                    if (newExercise === 'bicep-curl') {
-                      setMetrics({
-                        repCount: 0,
-                        currentAngle: { left: 180, right: 180 },
-                        formScore: 0,
-                        postureScore: 0,
-                        armPositionScore: 0,
-                        visibilityScore: 0,
-                        feedback: [],
-                        isInValidPosition: false,
-                        phase: 'down',
-                      });
-                    } else {
-                      setMetrics({
-                        repCount: 0,
-                        eshAngles: { left: 0, right: 0 },
-                        formScore: 0,
-                        postureScore: 0,
-                        armElevationScore: 0,
-                        visibilityScore: 0,
-                        feedback: [],
-                        isInValidPosition: false,
-                        phase: 'down',
-                      });
-                    }
-
-                    console.log(`🔄 Exercise changed to: ${newExercise === 'bicep-curl' ? 'Bicep Curl' : 'Lateral Raises'}`);
-                  }}
-                  className="exercise-select"
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={aiExerciseName}
+                  onChange={e => setAiExerciseName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleManualGenerate()}
+                  placeholder="or type an exercise..."
+                  className="bg-black border border-[#333] text-white text-sm px-3 py-1.5 rounded outline-none focus:border-[#00ff9f] w-44"
                   disabled={isExerciseActive}
+                />
+                <button
+                  onClick={handleManualGenerate}
+                  disabled={isExerciseActive || aiStatus === 'generating' || !aiExerciseName.trim()}
+                  className="btn-outline text-xs px-3 py-1.5"
                 >
-                  <option value="bicep-curl">Bicep Curl</option>
-                  <option value="lateral-raises">Lateral Raises</option>
-                </select>
-                <ChevronDown className="dropdown-icon" />
+                  {aiStatus === 'generating' ? '...' : 'Generate'}
+                </button>
               </div>
-              <button
-                onClick={() => setShowInstructionsModal(true)}
-                className="help-button"
-                title="View setup instructions"
-              >
-                <HelpCircle className="w-5 h-5" />
-              </button>
             </div>
 
             <div className="control-buttons-horizontal">
               {!isExerciseActive ? (
-                <button onClick={startExercise} className="btn-primary">
-                  <Play className="w-4 h-4" />
-                  <span>Start Exercise</span>
+                <button onClick={startExercise} className="btn-primary" disabled={aiStatus !== 'ready'}>
+                  <Play className="w-4 h-4" /><span>Start</span>
                 </button>
               ) : (
                 <button onClick={stopExercise} className="btn-secondary">
-                  <Square className="w-4 h-4" />
-                  <span>Stop Exercise</span>
+                  <Square className="w-4 h-4" /><span>Stop</span>
                 </button>
               )}
 
               <button onClick={resetExercise} className="btn-outline">
-                <RotateCcw className="w-4 h-4" />
-                <span>Reset</span>
+                <RotateCcw className="w-4 h-4" /><span className="hidden sm:inline">Reset</span>
               </button>
 
               {cameraActive ? (
                 <button onClick={stopCamera} className="btn-outline">
-                  <CameraOff className="w-4 h-4" />
-                  <span className="hidden sm:inline">Stop Camera</span>
+                  <CameraOff className="w-4 h-4" /><span className="hidden sm:inline">Stop Camera</span>
                 </button>
               ) : (
                 <button onClick={startCamera} className="btn-outline">
-                  <Camera className="w-4 h-4" />
-                  <span className="hidden sm:inline">Start Camera</span>
+                  <Camera className="w-4 h-4" /><span className="hidden sm:inline">Start Camera</span>
                 </button>
               )}
 
-              <button onClick={viewLogs} className="btn-outline" title="View logs in console">
-                <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">View Logs</span>
-              </button>
-
-              <button onClick={clearLogs} className="btn-outline" title="Clear all logs">
-                <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Clear Logs</span>
-              </button>
-
               <button
-                onClick={() => {
-                  const newVoiceState = !voiceEnabled;
-                  setVoiceEnabled(newVoiceState);
-                  if (voiceManagerRef.current) {
-                    if (newVoiceState) {
-                      voiceManagerRef.current.enable();
-                    } else {
-                      voiceManagerRef.current.disable();
-                      voiceManagerRef.current.stopAndClear();
-                    }
-                  }
-                }}
+                onClick={() => setVoiceEnabled(v => !v)}
                 className={`btn-outline ${voiceEnabled ? 'bg-green-500/20' : ''}`}
-                title={voiceEnabled ? "Mute voice feedback" : "Unmute voice feedback"}
               >
                 {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 <span className="hidden sm:inline">{voiceEnabled ? 'Voice On' : 'Voice Off'}</span>
               </button>
+
+              <button
+                onClick={exitAIMode}
+                className="btn-outline text-[#ff4444] border-[#ff444433] hover:bg-[#ff444411]"
+                disabled={isExerciseActive}
+              >
+                <X className="w-4 h-4" />
+                <span className="hidden sm:inline">Exit</span>
+              </button>
             </div>
           </div>
 
-          <div className="camera-container">
+          {/* Status bar */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-black border border-[#1a1a1a] rounded mb-2 text-xs">
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isListening ? 'bg-[#00ff9f] animate-pulse' : 'bg-[#333]'}`} />
+            <span className="text-[#555]">{isListening ? 'Listening' : 'Mic off'}</span>
+
+            {voiceTranscript && (
+              <span className="text-[#444] italic truncate max-w-[140px]">"{voiceTranscript}"</span>
+            )}
+
+            {jobStatusLabel && (
+              <span className={`ml-1 font-mono ${
+                jobStatus === 'failed'  ? 'text-[#ff4444]' :
+                jobStatus === 'done'    ? 'text-[#00ff9f]' :
+                'text-[#00d4ff] animate-pulse'
+              }`}>
+                ⚙ {jobStatusLabel}
+              </span>
+            )}
+
+            <span className="ml-auto text-[#2a2a2a] uppercase tracking-widest font-mono">{masterState}</span>
+          </div>
+
+
+
+          {/* Tester result */}
+          {aiTesterResult && (
+            <div className={`text-xs px-3 py-1.5 rounded border flex flex-wrap gap-x-3 mb-2 ${
+              aiTesterResult.passed ? 'border-[#00ff9f22] text-[#00ff9f55]' : 'border-[#ff444422] text-[#ff444466]'
+            }`}>
+              {aiTesterResult.passed ? '✓ Tester passed' : '✗ Tester partial'}
+              {aiTesterResult.checks?.filter((c: any) => !c.passed).map((c: any) => (
+                <span key={c.name} className="text-[#ff4444]">· {c.name}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Live metrics during exercise */}
+          {isExerciseActive && (
+            <div className="flex gap-3 font-mono text-xs mb-2">
+              <div className="bg-black border border-[#222] rounded px-4 py-2 text-center min-w-[64px]">
+                <div className="text-3xl font-bold text-[#00ff9f]">{aiMetrics.reps}</div>
+                <div className="text-[#444]">REPS</div>
+              </div>
+              <div className="bg-black border border-[#222] rounded px-4 py-2 text-center">
+                <div className={`text-xl font-bold ${aiMetrics.phase === 'up' ? 'text-[#00ff9f]' : 'text-[#00d4ff]'}`}>
+                  {String(aiMetrics.phase).toUpperCase()}
+                </div>
+                <div className="text-[#444]">PHASE</div>
+              </div>
+              <div className="bg-black border border-[#222] rounded px-3 py-2 flex-1 flex flex-col justify-center gap-0.5">
+                {aiMetrics.formIssues?.slice(0, 2).map((issue, i) => (
+                  <div key={i} className={
+                    issue.severity === 'HIGH' ? 'text-[#ff4444]' :
+                    issue.severity === 'MEDIUM' ? 'text-[#ffaa00]' : 'text-[#666]'
+                  }>
+                    {issue.message}
+                  </div>
+                ))}
+                {!aiMetrics.formIssues?.length && <div className="text-[#00ff9f44]">✓ Good form</div>}
+              </div>
+            </div>
+          )}
+
+              {/* Camera + chat overlay */}
+          <div className="camera-container relative">
+            {/* Chat overlay — last 4 messages shown at bottom of camera */}
+            {messages.length > 0 && (
+              <div className="absolute bottom-0 left-0 right-0 z-10 p-3 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none">
+                <div className="space-y-1.5 max-h-36 overflow-hidden flex flex-col justify-end">
+                  {messages.slice(-4).map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <span className={`text-xs px-2.5 py-1 rounded-lg max-w-[75%] leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-[#00ff9f22] text-[#00ff9f] border border-[#00ff9f33]'
+                          : 'bg-black/60 text-[#ccc] border border-white/10'
+                      }`}>
+                        {msg.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <WebcamCapture
               onPoseDetected={handlePoseDetected}
               isActive={isExerciseActive}
               className="w-full h-full"
-              currentAngles={
-                selectedExercise === 'bicep-curl' && 'currentAngle' in metrics
-                  ? metrics.currentAngle
-                  : undefined
-              }
-              onCameraStateChange={handleCameraStateChange}
+              onCameraStateChange={setCameraActive}
               cameraCommand={cameraCommand}
-              formValidation={metrics.formValidation}
-              metricsOverlay={metricsOverlay}
+              formValidation={isExerciseActive ? {
+                bodyHeightRatio: 0.9,
+                backAngle: aiMetrics.isValidPosition ? 180 : 150,
+              } : null}
+              metricsOverlay={isExerciseActive ? {
+                reps: aiMetrics.reps,
+                formScore: aiMetrics.isValidPosition ? 100 : 50,
+                postureScore: aiMetrics.formIssues?.some(i => i.joint === 'spine') ? 50 : 100,
+                armMetricLabel: 'Form',
+                armMetricScore: aiMetrics.isValidPosition ? 100 : 50,
+                leftAngleLabel: 'Debug',
+                leftAngleValue: aiMetrics.debugInfo ? Object.values(aiMetrics.debugInfo)[0] as number || 0 : 0,
+                rightAngleLabel: 'Debug',
+                rightAngleValue: aiMetrics.debugInfo ? Object.values(aiMetrics.debugInfo)[1] as number || 0 : 0,
+                phaseLabel: String(aiMetrics.phase),
+              } : null}
             />
           </div>
 
         </div>
-
-        {/* Instructions Modal */}
-        {showInstructionsModal && (
-          <div className="modal-overlay" onClick={() => setShowInstructionsModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2 className="modal-title">
-                  {selectedExercise === 'bicep-curl' ? 'Bicep Curl' : 'Lateral Raises'} Setup
-                </h2>
-                <button
-                  onClick={() => setShowInstructionsModal(false)}
-                  className="modal-close"
-                  aria-label="Close"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="modal-body">
-                <h3 className="modal-section-title">General Setup</h3>
-                <ul className="instructions-list">
-                  <li>Stand 6-8 feet away from the camera</li>
-                  <li>Ensure your full body is visible in the frame</li>
-                  <li>Stand straight with good posture</li>
-                  <li>Good lighting helps improve accuracy</li>
-                </ul>
-
-                <h3 className="modal-section-title">Exercise-Specific</h3>
-                <ul className="instructions-list">
-                  {selectedExercise === 'bicep-curl' ? (
-                    <>
-                      <li><strong>Keep your elbows close</strong> to your sides throughout the movement</li>
-                      <li><strong>Full range of motion</strong> - curl from fully extended to fully contracted</li>
-                      <li><strong>Keep legs straight</strong> - no bending at the knees</li>
-                      <li><strong>Control the weight</strong> - don't swing or use momentum</li>
-                    </>
-                  ) : (
-                    <>
-                      <li><strong>Start position:</strong> Arms at your sides, relaxed</li>
-                      <li><strong>Raise to shoulder level</strong> - aim for 80-90 degrees</li>
-                      <li><strong>Don't raise too high</strong> - avoid going above shoulder level</li>
-                      <li><strong>Keep legs straight</strong> - no bending at the knees</li>
-                      <li><strong>Arms slightly bent</strong> - maintain a small bend in elbows</li>
-                    </>
-                  )}
-                </ul>
-
-                <h3 className="modal-section-title">Tips</h3>
-                <ul className="instructions-list">
-                  <li>Perform movements slowly and with control</li>
-                  <li>Focus on form over speed</li>
-                  <li>Breathe steadily throughout each rep</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
+      {/* Pipeline log link — fixed bottom-right */}
+      {jobStatus && jobStatus !== 'done' && (
+        <a
+          href="/fitness/logs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono shadow-xl bg-[#050505] transition-colors ${
+            jobStatus === 'failed'  ? 'border-[#ff444433] text-[#ff4444]' :
+            jobStatus === 'done'    ? 'border-[#00ff9f33] text-[#00ff9f]' :
+            'border-[#00d4ff33] text-[#00d4ff]'
+          }`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+          {jobStatusDetail || jobStatus}
+          <span className="text-[#333] ml-1">↗ logs</span>
+        </a>
+      )}
     </>
   );
 }
