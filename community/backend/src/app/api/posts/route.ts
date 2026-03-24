@@ -12,6 +12,17 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: CORS });
 }
 
+function serializePost(post: any) {
+  return {
+    ...post,
+    userId: post.user_id ?? post.userId,
+    displayName: post.display_name ?? post.displayName,
+    upvotedBy: post.upvoted_by ?? post.upvotedBy ?? [],
+    commentCount: post.comment_count ?? post.commentCount ?? 0,
+    createdAt: post.created_at ?? post.createdAt,
+  };
+}
+
 export async function GET(request: NextRequest) {
   const tag = request.nextUrl.searchParams.get("tag") || "";
   const sort = request.nextUrl.searchParams.get("sort") || "recent";
@@ -22,16 +33,16 @@ export async function GET(request: NextRequest) {
     const filter: any = {};
     if (tag) filter.tags = tag;
 
-    const sortField = sort === "popular" ? { upvotes: -1 as const } : { createdAt: -1 as const };
+    const sortField = sort === "popular" ? { upvotes: -1 as const } : { created_at: -1 as const };
 
     const posts = await db
-      .collection("community-posts")
+      .collection("community_posts")
       .find(filter)
       .sort(sortField)
       .limit(limit)
       .toArray();
 
-    return NextResponse.json(posts, { headers: CORS });
+    return NextResponse.json(posts.map(serializePost), { headers: CORS });
   } catch (err: any) {
     console.error("Error fetching posts:", err.message);
     return NextResponse.json([], { headers: CORS });
@@ -51,22 +62,22 @@ export async function POST(request: NextRequest) {
     }
 
     const post = {
-      userId,
-      displayName,
+      user_id: userId,
+      display_name: displayName,
       title: title.trim(),
       body: body.trim(),
       tags: tags.filter(Boolean),
       upvotes: 0,
-      upvotedBy: [],
-      commentCount: 0,
-      createdAt: new Date(),
+      upvoted_by: [],
+      comment_count: 0,
+      created_at: new Date(),
     };
 
     const db = await getDb();
-    const result = await db.collection("community-posts").insertOne(post);
+    const result = await db.collection("community_posts").insertOne(post);
 
     return NextResponse.json(
-      { ...post, _id: result.insertedId },
+      { ...serializePost(post), _id: result.insertedId },
       { status: 201, headers: CORS }
     );
   } catch (err: any) {
@@ -91,24 +102,25 @@ export async function PATCH(request: NextRequest) {
 
     const db = await getDb();
     const post = await db
-      .collection("community-posts")
+      .collection("community_posts")
       .findOne({ _id: new ObjectId(postId) });
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404, headers: CORS });
     }
 
-    const alreadyUpvoted = (post.upvotedBy || []).includes(userId);
+    const upvotedBy = post.upvoted_by ?? post.upvotedBy ?? [];
+    const alreadyUpvoted = upvotedBy.includes(userId);
 
     if (alreadyUpvoted) {
-      await db.collection("community-posts").updateOne(
+      await db.collection("community_posts").updateOne(
         { _id: new ObjectId(postId) },
-        { $inc: { upvotes: -1 }, $pull: { upvotedBy: userId } as any }
+        { $inc: { upvotes: -1 }, $pull: { upvoted_by: userId } as any }
       );
     } else {
-      await db.collection("community-posts").updateOne(
+      await db.collection("community_posts").updateOne(
         { _id: new ObjectId(postId) },
-        { $inc: { upvotes: 1 }, $push: { upvotedBy: userId } as any }
+        { $inc: { upvotes: 1 }, $push: { upvoted_by: userId } as any }
       );
     }
 

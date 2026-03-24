@@ -12,18 +12,49 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: CORS });
 }
 
+function normalizeFavorite(favorite: any) {
+  return {
+    ...favorite,
+    userId: favorite.user_id ?? favorite.userId,
+    restaurantId: favorite.restaurant_id ?? favorite.restaurantId,
+    restaurantName: favorite.restaurant_name ?? favorite.restaurantName,
+    restaurantData: favorite.restaurant_data ?? favorite.restaurantData,
+  };
+}
+
+function normalizeClick(click: any) {
+  return {
+    ...click,
+    userId: click.user_id ?? click.userId,
+    restaurantId: click.restaurant_id ?? click.restaurantId,
+    restaurantName: click.restaurant_name ?? click.restaurantName,
+  };
+}
+
+function normalizePost(post: any) {
+  return {
+    ...post,
+    userId: post.user_id ?? post.userId,
+    displayName: post.display_name ?? post.displayName,
+  };
+}
+
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get("userId") || "demo-user";
 
   try {
     const db = await getDb();
 
-    const [userFavorites, userClicks, allPosts, userSessions] = await Promise.all([
-      db.collection("favorites").find({ userId }).toArray(),
-      db.collection("clicks").find({ userId, action: "search" }).sort({ timestamp: -1 }).limit(20).toArray(),
-      db.collection("community-posts").find().sort({ createdAt: -1 }).limit(50).toArray(),
-      db.collection("sessions").find({ userId }).sort({ date: -1 }).limit(10).toArray(),
+    const [favoriteDocs, clickDocs, postDocs, userSessions] = await Promise.all([
+      db.collection("favorites").find({ user_id: userId }).toArray(),
+      db.collection("clicks").find({ user_id: userId, action: "search" }).sort({ timestamp: -1 }).limit(20).toArray(),
+      db.collection("community_posts").find().sort({ created_at: -1 }).limit(50).toArray(),
+      db.collection("sessions").find({ user_id: userId }).sort({ date: -1 }).limit(10).toArray(),
     ]);
+
+    const userFavorites = favoriteDocs.map(normalizeFavorite);
+    const userClicks = clickDocs.map(normalizeClick);
+    const allPosts = postDocs.map(normalizePost);
 
     const userCategories = userFavorites
       .flatMap((f) => (f.categories || []).map((c: any) => c.title))

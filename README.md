@@ -150,7 +150,7 @@ See [docs/HOW_TO_RUN.md](./docs/HOW_TO_RUN.md) for complete environment variable
 - `nutrition_profiles` - Dietary preferences
 - `nutrition_recipes` - Generated and custom recipes
 - `nutrition_pantry_items` - Saved ingredients
-- `nutrition_insight_sessions` - Activity tracking
+- `nutrition_sessions_summary` - Activity tracking
 - `nutrition_insight_memory` - AI insights
 
 **Restaurant Finder** (MongoDB: via backend)

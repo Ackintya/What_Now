@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
       await request.json();
 
     const entry = {
-      userId,
-      restaurantId,
-      restaurantName,
+      user_id: userId,
+      restaurant_id: restaurantId,
+      restaurant_name: restaurantName,
       action,
       metadata,
       timestamp: new Date(),
@@ -31,7 +31,14 @@ export async function POST(request: NextRequest) {
       await db.collection("clicks").insertOne(entry);
     } catch (dbErr: any) {
       console.warn("MongoDB unavailable for click tracking, using memory:", dbErr.message);
-      memoryClicks.push(entry);
+      memoryClicks.push({
+        userId,
+        restaurantId,
+        restaurantName,
+        action,
+        metadata,
+        timestamp: entry.timestamp,
+      });
     }
 
     return NextResponse.json({ ok: true }, { headers: CORS_HEADERS });

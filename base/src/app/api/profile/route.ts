@@ -11,6 +11,26 @@ interface UserProfile {
   updatedAt: Date;
 }
 
+interface UserProfileDocument {
+  user_id: string;
+  date_of_birth?: string;
+  height?: number;
+  weight?: number;
+  lifestyle?: string;
+  updated_at: Date;
+}
+
+function serializeProfile(profile: UserProfileDocument): UserProfile {
+  return {
+    userId: profile.user_id,
+    dateOfBirth: profile.date_of_birth,
+    height: profile.height,
+    weight: profile.weight,
+    lifestyle: profile.lifestyle,
+    updatedAt: profile.updated_at,
+  };
+}
+
 export async function GET() {
   try {
     const user = await getCurrentUser();
@@ -19,10 +39,10 @@ export async function GET() {
     }
 
     const db = await getDatabase();
-    const userProfilesCollection = db.collection("userProfiles");
+    const userProfilesCollection = db.collection<UserProfileDocument>("user_profiles");
 
     // Fetch user profile
-    const profile = await userProfilesCollection.findOne({ userId: user.userId });
+    const profile = await userProfilesCollection.findOne({ user_id: user.userId });
 
     if (!profile) {
       // Return empty object if profile doesn't exist yet
@@ -33,7 +53,7 @@ export async function GET() {
     const { _id, ...profileData } = profile;
 
     return NextResponse.json({
-      profile: profileData,
+      profile: serializeProfile(profileData),
     });
   } catch (error) {
     console.error("Profile fetch error:", error);
@@ -55,13 +75,13 @@ export async function POST(request: Request) {
     const { dateOfBirth, height, weight, lifestyle } = body;
 
     // Build profile update object (only include defined fields)
-    const profileUpdate: Partial<UserProfile> = {
-      userId: user.userId,
-      updatedAt: new Date(),
+    const profileUpdate: Partial<UserProfileDocument> = {
+      user_id: user.userId,
+      updated_at: new Date(),
     };
 
     if (dateOfBirth !== undefined) {
-      profileUpdate.dateOfBirth = dateOfBirth;
+      profileUpdate.date_of_birth = dateOfBirth;
     }
     if (height !== undefined) {
       profileUpdate.height = height;
@@ -74,18 +94,18 @@ export async function POST(request: Request) {
     }
 
     const db = await getDatabase();
-    const userProfilesCollection = db.collection("userProfiles");
+    const userProfilesCollection = db.collection<UserProfileDocument>("user_profiles");
 
     // Upsert user profile
     await userProfilesCollection.updateOne(
-      { userId: user.userId },
+      { user_id: user.userId },
       { $set: profileUpdate },
       { upsert: true }
     );
 
     return NextResponse.json({
       success: true,
-      profile: profileUpdate,
+      profile: serializeProfile(profileUpdate as UserProfileDocument),
     });
   } catch (error) {
     console.error("Profile update error:", error);

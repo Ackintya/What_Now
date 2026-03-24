@@ -12,17 +12,27 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: CORS });
 }
 
+function serializeEvent(event: any) {
+  return {
+    ...event,
+    userId: event.user_id ?? event.userId,
+    displayName: event.display_name ?? event.displayName,
+    attendeeNames: event.attendee_names ?? event.attendeeNames ?? [],
+    createdAt: event.created_at ?? event.createdAt,
+  };
+}
+
 export async function GET() {
   try {
     const db = await getDb();
     const events = await db
-      .collection("community-events")
+      .collection("community_events")
       .find({ date: { $gte: new Date().toISOString().split("T")[0] } })
       .sort({ date: 1 })
       .limit(30)
       .toArray();
 
-    return NextResponse.json(events, { headers: CORS });
+    return NextResponse.json(events.map(serializeEvent), { headers: CORS });
   } catch (err: any) {
     console.error("Error fetching events:", err.message);
     return NextResponse.json([], { headers: CORS });
@@ -50,8 +60,8 @@ export async function POST(request: NextRequest) {
     }
 
     const event = {
-      userId,
-      displayName,
+      user_id: userId,
+      display_name: displayName,
       title: title.trim(),
       description: (description || "").trim(),
       date,
@@ -59,15 +69,15 @@ export async function POST(request: NextRequest) {
       location: (location || "").trim(),
       category: category || "general",
       attendees: [userId],
-      attendeeNames: [displayName],
-      createdAt: new Date(),
+      attendee_names: [displayName],
+      created_at: new Date(),
     };
 
     const db = await getDb();
-    const result = await db.collection("community-events").insertOne(event);
+    const result = await db.collection("community_events").insertOne(event);
 
     return NextResponse.json(
-      { ...event, _id: result.insertedId },
+      { ...serializeEvent(event), _id: result.insertedId },
       { status: 201, headers: CORS }
     );
   } catch (err: any) {
@@ -92,27 +102,28 @@ export async function PATCH(request: NextRequest) {
 
     const db = await getDb();
     const event = await db
-      .collection("community-events")
+      .collection("community_events")
       .findOne({ _id: new ObjectId(eventId) });
 
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404, headers: CORS });
     }
 
-    const isAttending = (event.attendees || []).includes(userId);
+    const attendees = event.attendees || [];
+    const isAttending = attendees.includes(userId);
 
     if (isAttending) {
-      await db.collection("community-events").updateOne(
+      await db.collection("community_events").updateOne(
         { _id: new ObjectId(eventId) },
         {
-          $pull: { attendees: userId, attendeeNames: displayName } as any,
+          $pull: { attendees: userId, attendee_names: displayName } as any,
         }
       );
     } else {
-      await db.collection("community-events").updateOne(
+      await db.collection("community_events").updateOne(
         { _id: new ObjectId(eventId) },
         {
-          $push: { attendees: userId, attendeeNames: displayName } as any,
+          $push: { attendees: userId, attendee_names: displayName } as any,
         }
       );
     }
@@ -120,7 +131,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json(
       {
         attending: !isAttending,
-        attendeeCount: event.attendees.length + (isAttending ? -1 : 1),
+        attendeeCount: attendees.length + (isAttending ? -1 : 1),
       },
       { headers: CORS }
     );

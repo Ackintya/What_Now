@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase(),
       name,
       password: hashedPassword,
-      createdAt: new Date(),
+      created_at: new Date(),
     });
 
     // Generate JWT token

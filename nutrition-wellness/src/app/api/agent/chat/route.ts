@@ -12,7 +12,7 @@ async function getDb() {
 
 // Collections Gemini is allowed to query + the userId field name each uses
 const ALLOWED_COLLECTIONS: Record<string, string> = {
-  sessions:                  "userId",
+  sessions:                  "user_id",
   nutrition_profiles:        "user_id",
   generated_recipes:         "user_id",
   saved_recipes:             "user_id",
@@ -22,17 +22,17 @@ const ALLOWED_COLLECTIONS: Record<string, string> = {
   hair_logs:                 "user_id",
   loved_products:            "user_id",
   product_recommendations:   "user_id",
-  favorites:                 "userId",
-  clicks:                    "userId",
+  favorites:                 "user_id",
+  clicks:                    "user_id",
   nutrition_insight_memory:  "user_id",
-  "yelp-insights":           "userId",
-  wellness_insights:         "user_id",
-  userProfiles:              "userId",
-  "community-posts":         "userId",
-  "community-comments":      "userId",
-  "community-moods":         "userId",
-  "community-events":        "attendees",
-  "community-connections":   "fromUserId",
+  yelp_insight:              "user_id",
+  skin_hair_pattern:         "user_id",
+  user_profiles:             "user_id",
+  community_posts:           "user_id",
+  community_comments:        "user_id",
+  community_moods:           "user_id",
+  community_events:          "attendees",
+  community_connections:     "from_user_id",
 };
 
 // ── Tool definitions ───────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ const TOOLS = [
               enum: Object.keys(ALLOWED_COLLECTIONS),
               description:
                 "Collection to query. " +
-                "'userProfiles' → DOB/height/weight/lifestyle. " +
+                "'user_profiles' → DOB/height/weight/lifestyle. " +
                 "'sessions' → workout history. " +
                 "'skin_logs' → skin analysis history. " +
                 "'hair_logs' → hair analysis history. " +
@@ -68,12 +68,12 @@ const TOOLS = [
                 "'nutrition_profiles' → diet goals and restrictions. " +
                 "'clicks' → restaurant search history. " +
                 "'nutrition_insight_memory' → AI nutrition insights. " +
-                "'yelp-insights' → AI dining insights. " +
-                "'community-posts' → user's community posts. " +
-                "'community-comments' → user's comments. " +
-                "'community-moods' → mood check-ins. " +
-                "'community-events' → events user is attending. " +
-                "'community-connections' → user's connections.",
+                "'yelp_insight' → AI dining insights. " +
+                "'community_posts' → user's community posts. " +
+                "'community_comments' → user's comments. " +
+                "'community_moods' → mood check-ins. " +
+                "'community_events' → events user is attending. " +
+                "'community_connections' → user's connections.",
             },
             limit: {
               type: "integer",
@@ -196,7 +196,7 @@ USER ID: ${userId}
 
 CRITICAL RULES:
 1. You have a tool: get_user_data. USE IT whenever the user asks about their own data.
-   - Asked about date of birth, age, height, weight? → call get_user_data("userProfiles")
+   - Asked about date of birth, age, height, weight? → call get_user_data("user_profiles")
    - Asked about workouts or exercise sessions? → call get_user_data("sessions")
    - Asked about recipes or food? → call get_user_data("generated_recipes") or "saved_recipes"
    - Asked about skin or hair? → call get_user_data("skin_logs") or "hair_logs"
@@ -275,8 +275,8 @@ CRITICAL RULES:
       const { client: saveClient, db: saveDb } = await getDb();
       const now = new Date();
       await saveDb.collection("agent_chats").insertMany([
-        { userId, role: "user",      content: message,       timestamp: now },
-        { userId, role: "assistant", content: finalResponse, timestamp: new Date(now.getTime() + 1) },
+        { user_id: userId, role: "user",      content: message,       timestamp: now },
+        { user_id: userId, role: "assistant", content: finalResponse, timestamp: new Date(now.getTime() + 1) },
       ]);
       await saveClient.close();
     } catch (saveErr) {

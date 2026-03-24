@@ -21,10 +21,10 @@ It does **not** modify anything in `../base`.
   - `recipe_modifications`
   - `saved_recipes`
   - `authentic_dish_requests`
-  - `wellness_meal_insights`
+  - `meal_pattern`
 - Nutrition insight memory layer:
   - `nutrition_insight` (chat-personalization memory)
-  - `nutrition_insight_sessions` (internal session tracker)
+  - `nutrition_sessions_summary` (internal session tracker)
 - Gemini integration scaffolding with deterministic fallback datasets
 - Grounding line included in generated results (`Also check: ...`)
 - Non-medical wording guardrails for meal-planning context

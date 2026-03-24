@@ -78,37 +78,37 @@ class CrossCorrelationEngine {
       supplementLogs,
       userProfile
     ] = await Promise.all([
-      this.db.collection('workoutSessions').find({
-        userId,
+      this.db.collection('workout_sessions').find({
+        user_id: userId,
         date: { $gte: startDate, $lte: endDate }
       }).toArray(),
 
-      this.db.collection('nutritionLogs').find({
-        userId,
+      this.db.collection('nutrition_logs').find({
+        user_id: userId,
         date: { $gte: startDate, $lte: endDate }
       }).toArray(),
 
-      this.db.collection('skinAnalyses').find({
-        userId,
+      this.db.collection('skin_analyses').find({
+        user_id: userId,
         date: { $gte: startDate, $lte: endDate }
       }).toArray(),
 
-      this.db.collection('hairAnalyses').find({
-        userId,
+      this.db.collection('hair_analyses').find({
+        user_id: userId,
         date: { $gte: startDate, $lte: endDate }
       }).toArray(),
 
-      this.db.collection('sleepLogs').find({
-        userId,
+      this.db.collection('sleep_logs').find({
+        user_id: userId,
         date: { $gte: startDate, $lte: endDate }
       }).toArray(),
 
-      this.db.collection('supplementLogs').find({
-        userId,
+      this.db.collection('supplement_logs').find({
+        user_id: userId,
         date: { $gte: startDate, $lte: endDate }
       }).toArray(),
 
-      this.db.collection('userProfiles').findOne({ userId })
+      this.db.collection('user_profiles').findOne({ user_id: userId })
     ]);
 
     return {

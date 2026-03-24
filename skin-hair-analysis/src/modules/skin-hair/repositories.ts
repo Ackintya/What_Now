@@ -15,7 +15,7 @@ const COLLECTIONS = {
   hairLogs: "hair_logs",
   lovedProducts: "loved_products",
   recommendations: "product_recommendations",
-  wellnessInsights: "wellness_insights",
+  wellnessInsights: "skin_hair_pattern",
 };
 
 function serializeId<T extends { _id?: unknown }>(doc: T | null): (T & { _id?: string }) | null {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getDatabase } from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
@@ -22,8 +23,8 @@ export async function POST(request: Request) {
 
     // Update the user's name
     await usersCollection.updateOne(
-      { _id: user.userId },
-      { $set: { name: name.trim(), updatedAt: new Date() } }
+      { _id: new ObjectId(user.userId) },
+      { $set: { name: name.trim(), updated_at: new Date() } }
     );
 
     // Generate new token with updated name

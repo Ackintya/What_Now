@@ -19,7 +19,7 @@ It does **not** modify anything in `../base`.
   - `hair_logs`
   - `loved_products`
   - `product_recommendations`
-  - `wellness_insights`
+  - `skin_hair_pattern`
 - Deterministic recommendation engine (ingredient overlap + sensitivity exclusion)
 - Gemini Vision analysis scaffolding with mock fallback
 - Guardrail post-processing for non-medical phrasing

@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
     const connections = await db
-      .collection("community-connections")
-      .find({ fromUserId: userId })
+      .collection("community_connections")
+      .find({ from_user_id: userId })
       .toArray();
 
-    const connectedIds = connections.map((c) => c.toUserId);
+    const connectedIds = connections.map((c) => c.to_user_id);
     return NextResponse.json({ connectedIds }, { headers: CORS });
   } catch (err: any) {
     console.error("Error fetching connections:", err.message);
@@ -41,18 +41,18 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDb();
-    const collection = db.collection("community-connections");
-    const existing = await collection.findOne({ fromUserId, toUserId });
+    const collection = db.collection("community_connections");
+    const existing = await collection.findOne({ from_user_id: fromUserId, to_user_id: toUserId });
 
     if (existing) {
-      await collection.deleteOne({ fromUserId, toUserId });
+      await collection.deleteOne({ from_user_id: fromUserId, to_user_id: toUserId });
       return NextResponse.json({ action: "disconnected", toUserId }, { headers: CORS });
     }
 
     await collection.insertOne({
-      fromUserId,
-      toUserId,
-      toDisplayName: toDisplayName || "User",
+      from_user_id: fromUserId,
+      to_user_id: toUserId,
+      to_display_name: toDisplayName || "User",
       timestamp: new Date(),
     });
 

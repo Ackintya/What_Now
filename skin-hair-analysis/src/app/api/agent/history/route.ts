@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   try {
     const messages = await db
       .collection("agent_chats")
-      .find({ userId })
+      .find({ user_id: userId })
       .sort({ timestamp: 1 })
       .limit(40)
       .toArray();

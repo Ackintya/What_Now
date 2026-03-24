@@ -51,41 +51,83 @@ export interface ExerciseSession {
   notes?: string;
 }
 
+interface ExerciseSessionDocument {
+  _id?: string;
+  user_id?: string;
+  exercise: string;
+  date: Date;
+  reps: number;
+  duration: number;
+  form_score: number;
+  posture_score: number;
+  arm_position_score: number;
+  visibility_score: number;
+  avg_elbow_angle: number;
+  notes?: string;
+}
+
+function serializeSession(doc: ExerciseSessionDocument & { _id?: unknown }): ExerciseSession {
+  return {
+    _id: doc._id ? String(doc._id) : undefined,
+    userId: doc.user_id,
+    exercise: doc.exercise,
+    date: doc.date,
+    reps: doc.reps,
+    duration: doc.duration,
+    formScore: doc.form_score,
+    postureScore: doc.posture_score,
+    armPositionScore: doc.arm_position_score,
+    visibilityScore: doc.visibility_score,
+    avgElbowAngle: doc.avg_elbow_angle,
+    notes: doc.notes,
+  };
+}
+
 export async function saveExerciseSession(session: ExerciseSession) {
   const db = await getDatabase();
   const { _id, ...sessionData } = session;
-  const result = await db.collection('sessions').insertOne({
-    ...sessionData,
+  const payload: ExerciseSessionDocument = {
+    user_id: sessionData.userId,
+    exercise: sessionData.exercise,
     date: new Date(),
-  });
+    reps: sessionData.reps,
+    duration: sessionData.duration,
+    form_score: sessionData.formScore,
+    posture_score: sessionData.postureScore,
+    arm_position_score: sessionData.armPositionScore,
+    visibility_score: sessionData.visibilityScore,
+    avg_elbow_angle: sessionData.avgElbowAngle,
+    notes: sessionData.notes,
+  };
+  const result = await db.collection<ExerciseSessionDocument>('sessions').insertOne(payload);
   return result;
 }
 
 export async function getUserSessions(userId: string, limit: number = 10) {
   const db = await getDatabase();
   const sessions = await db
-    .collection('sessions')
-    .find({ userId })
+    .collection<ExerciseSessionDocument>('sessions')
+    .find({ user_id: userId })
     .sort({ date: -1 })
     .limit(limit)
     .toArray();
-  return sessions;
+  return sessions.map(serializeSession);
 }
 
 export async function getSessionStats(userId: string) {
   const db = await getDatabase();
   const stats = await db
-    .collection('sessions')
+    .collection<ExerciseSessionDocument>('sessions')
     .aggregate([
-      { $match: { userId } },
+      { $match: { user_id: userId } },
       {
         $group: {
           _id: '$exercise',
           totalReps: { $sum: '$reps' },
           totalSessions: { $sum: 1 },
-          avgFormScore: { $avg: '$formScore' },
-          avgPostureScore: { $avg: '$postureScore' },
-          bestFormScore: { $max: '$formScore' },
+          avgFormScore: { $avg: '$form_score' },
+          avgPostureScore: { $avg: '$posture_score' },
+          bestFormScore: { $max: '$form_score' },
         },
       },
     ])

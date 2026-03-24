@@ -23,9 +23,9 @@ const COLLECTIONS = {
   recipeModifications: "recipe_modifications",
   savedRecipes: "saved_recipes",
   authenticRequests: "authentic_dish_requests",
-  insights: "wellness_meal_insights",
-  insightMemory: "nutrition_insight",
-  insightSessions: "nutrition_insight_sessions",
+  insights: "meal_pattern",
+  insightMemory: "nutrition_insight_memory",
+  insightSessions: "nutrition_sessions_summary",
 } as const;
 
 function serializeId<T extends { _id?: unknown }>(doc: T | null): (T & { _id?: string }) | null {

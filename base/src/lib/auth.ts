@@ -15,7 +15,8 @@ export interface User {
   email: string;
   name: string;
   password: string;
-  createdAt: Date;
+  created_at: Date;
+  updated_at?: Date;
 }
 
 export interface JWTPayload {

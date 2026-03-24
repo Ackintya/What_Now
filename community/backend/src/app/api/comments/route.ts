@@ -12,6 +12,16 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: CORS });
 }
 
+function serializeComment(comment: any) {
+  return {
+    ...comment,
+    postId: comment.post_id ?? comment.postId,
+    userId: comment.user_id ?? comment.userId,
+    displayName: comment.display_name ?? comment.displayName,
+    createdAt: comment.created_at ?? comment.createdAt,
+  };
+}
+
 export async function GET(request: NextRequest) {
   const postId = request.nextUrl.searchParams.get("postId");
 
@@ -25,12 +35,12 @@ export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
     const comments = await db
-      .collection("community-comments")
-      .find({ postId })
-      .sort({ createdAt: 1 })
+      .collection("community_comments")
+      .find({ post_id: postId })
+      .sort({ created_at: 1 })
       .toArray();
 
-    return NextResponse.json(comments, { headers: CORS });
+    return NextResponse.json(comments.map(serializeComment), { headers: CORS });
   } catch (err: any) {
     console.error("Error fetching comments:", err.message);
     return NextResponse.json([], { headers: CORS });
@@ -50,23 +60,23 @@ export async function POST(request: NextRequest) {
     }
 
     const comment = {
-      postId,
-      userId,
-      displayName,
+      post_id: postId,
+      user_id: userId,
+      display_name: displayName,
       body: body.trim(),
-      createdAt: new Date(),
+      created_at: new Date(),
     };
 
     const db = await getDb();
-    const result = await db.collection("community-comments").insertOne(comment);
+    const result = await db.collection("community_comments").insertOne(comment);
 
-    await db.collection("community-posts").updateOne(
+    await db.collection("community_posts").updateOne(
       { _id: new ObjectId(postId) },
-      { $inc: { commentCount: 1 } }
+      { $inc: { comment_count: 1 } }
     );
 
     return NextResponse.json(
-      { ...comment, _id: result.insertedId },
+      { ...serializeComment(comment), _id: result.insertedId },
       { status: 201, headers: CORS }
     );
   } catch (err: any) {

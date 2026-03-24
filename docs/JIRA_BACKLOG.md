@@ -353,7 +353,7 @@ As a nutrition user, I want the app to analyze my activity and generate personal
 - Task: `GET/POST /api/nutrition/insights` — fetch and generate insights
 - Task: Activity tracking via 15-minute sessions
 - Task: `POST /api/nutrition/insight-memory/finalize` — finalize session and generate insight
-- Task: MongoDB collections: `nutrition_insight_sessions`, `wellness_meal_insights`, `nutrition_insight`
+- Task: MongoDB collections: `nutrition_sessions_summary`, `meal_pattern`, `nutrition_insight_memory`
 - **Status: Done**
 
 ---
@@ -466,7 +466,7 @@ As a user, I want to track products I already love so that the AI factors them i
 **Story 7.6 — Skin/hair wellness insights**
 As a user, I want insights correlating my skin/hair health with my lifestyle so that I can make holistic improvements.
 - Task: `GET/POST /api/skin-hair/wellness-insights` — generate correlations (sleep, workout, nutrition, supplements)
-- Task: MongoDB collection: `wellness_insights`
+- Task: MongoDB collection: `skin_hair_pattern`
 - **Status: Done**
 
 ---
@@ -751,8 +751,8 @@ These items were scoped out of MVP and are in the backlog for future sprints:
 | `saved_recipes` | Nutrition | User-saved recipes |
 | `recipe_modifications` | Nutrition | Recipe modification history |
 | `authentic_dish_requests` | Nutrition | Dish optimization history |
-| `nutrition_insight_sessions` | Nutrition | Activity tracking sessions |
-| `wellness_meal_insights` | Nutrition | Generated nutrition insights |
+| `nutrition_sessions_summary` | Nutrition | Activity tracking sessions |
+| `meal_pattern` | Nutrition | Generated nutrition insights |
 | `favorites` | Yelp | Favourite restaurants |
 | `clicks` | Yelp | User activity tracking |
 | `yelp-insights` | Yelp | AI dining preference insights |
@@ -761,7 +761,7 @@ These items were scoped out of MVP and are in the backlog for future sprints:
 | `hair_logs` | Skin-Hair | Hair analysis history |
 | `loved_products` | Skin-Hair | User's favourite products |
 | `product_recommendations` | Skin-Hair | AI product recommendations |
-| `wellness_insights` | Skin-Hair | Lifestyle correlation insights |
+| `skin_hair_pattern` | Skin-Hair | Lifestyle correlation insights |
 | `community-posts` | Community | Discussion posts |
 | `community-comments` | Community | Post comments |
 | `community-moods` | Community | Daily mood check-ins |

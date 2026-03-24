@@ -13,19 +13,50 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: CORS_HEADERS });
 }
 
+function serializeInsight(doc: any) {
+  return {
+    ...doc,
+    userId: doc.user_id ?? doc.userId,
+    favoriteCount: doc.favorite_count ?? doc.favoriteCount ?? 0,
+    searchCount: doc.search_count ?? doc.searchCount ?? 0,
+    topCategories: doc.top_categories ?? doc.topCategories ?? [],
+    searchLocations: doc.search_locations ?? doc.searchLocations ?? [],
+    topClicked: doc.top_clicked ?? doc.topClicked ?? [],
+  };
+}
+
+function normalizeFavorite(doc: any) {
+  return {
+    ...doc,
+    userId: doc.user_id ?? doc.userId,
+    restaurantId: doc.restaurant_id ?? doc.restaurantId,
+    restaurantName: doc.restaurant_name ?? doc.restaurantName,
+    restaurantData: doc.restaurant_data ?? doc.restaurantData,
+  };
+}
+
+function normalizeClick(doc: any) {
+  return {
+    ...doc,
+    userId: doc.user_id ?? doc.userId,
+    restaurantId: doc.restaurant_id ?? doc.restaurantId,
+    restaurantName: doc.restaurant_name ?? doc.restaurantName,
+  };
+}
+
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get("userId") || "demo-user";
 
   try {
     const db = await getDb();
     const insights = await db
-      .collection("yelp-insights")
-      .find({ userId })
+      .collection("yelp_insight")
+      .find({ user_id: userId })
       .sort({ timestamp: -1 })
       .limit(10)
       .toArray();
 
-    return NextResponse.json(insights, { headers: CORS_HEADERS });
+    return NextResponse.json(insights.map(serializeInsight), { headers: CORS_HEADERS });
   } catch (err: any) {
     console.warn("MongoDB unavailable for insights GET:", err.message);
     return NextResponse.json([], { headers: CORS_HEADERS });
@@ -50,10 +81,12 @@ export async function POST(request: NextRequest) {
 
     try {
       const db = await getDb();
-      [favorites, recentClicks] = await Promise.all([
-        db.collection("favorites").find({ userId }).sort({ timestamp: -1 }).toArray(),
-        db.collection("clicks").find({ userId }).sort({ timestamp: -1 }).limit(50).toArray(),
+      const [favoriteDocs, clickDocs] = await Promise.all([
+        db.collection("favorites").find({ user_id: userId }).sort({ timestamp: -1 }).toArray(),
+        db.collection("clicks").find({ user_id: userId }).sort({ timestamp: -1 }).limit(50).toArray(),
       ]);
+      favorites = favoriteDocs.map(normalizeFavorite);
+      recentClicks = clickDocs.map(normalizeClick);
       useDb = true;
     } catch (dbErr: any) {
       console.warn("MongoDB unavailable for insights generation, using memory:", dbErr.message);
@@ -150,15 +183,15 @@ Write ONLY the insight text, no JSON, no markdown, just plain sentences.`;
     if (useDb) {
       try {
         const db = await getDb();
-        await db.collection("yelp-insights").insertOne({
-          userId,
+        await db.collection("yelp_insight").insertOne({
+          user_id: userId,
           insight: insightText,
           timestamp: new Date(),
-          favoriteCount: favorites.length,
-          searchCount,
-          topCategories,
-          searchLocations,
-          topClicked: topClicked.map((r) => r.name),
+          favorite_count: favorites.length,
+          search_count: searchCount,
+          top_categories: topCategories,
+          search_locations: searchLocations,
+          top_clicked: topClicked.map((r) => r.name),
         });
       } catch {
         console.warn("Could not persist insight to MongoDB");

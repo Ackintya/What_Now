@@ -19,11 +19,11 @@ export async function GET(request: NextRequest) {
     const db = await getDb();
 
     const userMood = await db
-      .collection("community-moods")
-      .findOne({ userId, date: today });
+      .collection("community_moods")
+      .findOne({ user_id: userId, date: today });
 
     const todayMoods = await db
-      .collection("community-moods")
+      .collection("community_moods")
       .find({ date: today })
       .toArray();
 
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
     }
 
     const last7Days = await db
-      .collection("community-moods")
-      .find({ userId })
+      .collection("community_moods")
+      .find({ user_id: userId })
       .sort({ date: -1 })
       .limit(7)
       .toArray();
@@ -79,17 +79,17 @@ export async function POST(request: NextRequest) {
     const today = new Date().toISOString().split("T")[0];
 
     const db = await getDb();
-    await db.collection("community-moods").updateOne(
-      { userId, date: today },
+    await db.collection("community_moods").updateOne(
+      { user_id: userId, date: today },
       {
         $set: {
-          userId,
+          user_id: userId,
           rating,
           note: note.trim(),
           date: today,
-          updatedAt: new Date(),
+          updated_at: new Date(),
         },
-        $setOnInsert: { createdAt: new Date() },
+        $setOnInsert: { created_at: new Date() },
       },
       { upsert: true }
     );

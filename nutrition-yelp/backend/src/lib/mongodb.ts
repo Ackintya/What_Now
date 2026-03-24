@@ -1,7 +1,7 @@
 import { MongoClient, Db } from "mongodb";
 
 const MONGODB_URI = process.env.MONGODB_URI!;
-const DB_NAME = "wellbeing_app";
+const DB_NAME = process.env.MONGODB_DB || "wellbeing_app";
 
 let clientPromise: Promise<MongoClient> | null = null;
 

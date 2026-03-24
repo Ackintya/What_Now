@@ -12,6 +12,16 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: CORS_HEADERS });
 }
 
+function serializeFavorite(favorite: any) {
+  return {
+    ...favorite,
+    userId: favorite.user_id ?? favorite.userId,
+    restaurantId: favorite.restaurant_id ?? favorite.restaurantId,
+    restaurantName: favorite.restaurant_name ?? favorite.restaurantName,
+    restaurantData: favorite.restaurant_data ?? favorite.restaurantData,
+  };
+}
+
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get("userId") || "demo-user";
 
@@ -19,11 +29,11 @@ export async function GET(request: NextRequest) {
     const db = await getDb();
     const favorites = await db
       .collection("favorites")
-      .find({ userId })
+      .find({ user_id: userId })
       .sort({ timestamp: -1 })
       .toArray();
 
-    return NextResponse.json(favorites, { headers: CORS_HEADERS });
+    return NextResponse.json(favorites.map(serializeFavorite), { headers: CORS_HEADERS });
   } catch (err: any) {
     console.warn("MongoDB unavailable for favorites GET, using memory:", err.message);
     const filtered = memoryFavorites.filter((f) => f.userId === userId);
@@ -46,17 +56,17 @@ export async function POST(request: NextRequest) {
     try {
       const db = await getDb();
       const collection = db.collection("favorites");
-      const existing = await collection.findOne({ userId, restaurantId });
+      const existing = await collection.findOne({ user_id: userId, restaurant_id: restaurantId });
 
       if (existing) {
-        await collection.deleteOne({ userId, restaurantId });
+        await collection.deleteOne({ user_id: userId, restaurant_id: restaurantId });
         return NextResponse.json({ action: "removed", restaurantId }, { headers: CORS_HEADERS });
       }
 
       await collection.insertOne({
-        userId,
-        restaurantId,
-        restaurantName,
+        user_id: userId,
+        restaurant_id: restaurantId,
+        restaurant_name: restaurantName,
         categories: categories || [],
         location: location || "",
         timestamp: new Date(),

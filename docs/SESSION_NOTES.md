@@ -204,7 +204,7 @@ private calculateAngle(a: Point, b: Point, c: Point): number {
 - `nutrition_profiles` - User dietary preferences and goals
 - `nutrition_recipes` - Generated and custom recipes
 - `nutrition_pantry_items` - Saved pantry ingredients
-- `nutrition_insight_sessions` - Active tracking sessions
+- `nutrition_sessions_summary` - Active tracking sessions
 - `nutrition_insight_memory` - Finalized insights
 
 ### 5. Find Restaurants Module (Nutrition-Yelp)

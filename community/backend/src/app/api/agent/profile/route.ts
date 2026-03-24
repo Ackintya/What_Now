@@ -56,11 +56,11 @@ export async function GET(req: NextRequest) {
       userDoc,
       userProfile,
       nutritionProfile,
+      skinHairProfile,
+      lovedProducts,
       generatedRecipes,
       savedRecipes,
       pantryItems,
-      skinHairProfile,
-      lovedProducts,
       favorites,
       clickHistory,
       nutritionInsights,
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       // Identity — always fetch
       objId ? db.collection("users").findOne({ _id: objId }) : null,
-      db.collection("userProfiles").findOne({ userId }),
+      db.collection("user_profiles").findOne({ user_id: userId }),
       db.collection("nutrition_profiles").findOne({ user_id: userId }),
       db.collection("skin_hair_profiles").findOne({ user_id: userId }),
       db.collection("loved_products").find({ user_id: userId }).toArray(),
@@ -82,18 +82,37 @@ export async function GET(req: NextRequest) {
       db.collection("generated_recipes").find({ user_id: userId, created_at: { $gte: twoDaysAgo } }).sort({ created_at: -1 }).limit(10).toArray(),
       db.collection("saved_recipes").find({ user_id: userId, saved_at: { $gte: twoDaysAgo } }).sort({ saved_at: -1 }).limit(10).toArray(),
       db.collection("pantry_items").find({ user_id: userId, created_at: { $gte: twoDaysAgo } }).toArray(),
-      db.collection("favorites").find({ userId, timestamp: { $gte: twoDaysAgo } }).sort({ timestamp: -1 }).toArray(),
-      db.collection("clicks").find({ userId, timestamp: { $gte: twoDaysAgo } }).sort({ timestamp: -1 }).limit(30).toArray(),
+      db.collection("favorites").find({ user_id: userId, timestamp: { $gte: twoDaysAgo } }).sort({ timestamp: -1 }).toArray(),
+      db.collection("clicks").find({ user_id: userId, timestamp: { $gte: twoDaysAgo } }).sort({ timestamp: -1 }).limit(30).toArray(),
       db.collection("nutrition_insight_memory").find({ user_id: userId, created_at: { $gte: twoDaysAgo } }).sort({ created_at: -1 }).limit(5).toArray(),
-      db.collection("yelp-insights").find({ userId, timestamp: { $gte: twoDaysAgo } }).sort({ timestamp: -1 }).limit(3).toArray(),
-      db.collection("nutrition_insight_sessions").findOne({ user_id: userId, started_at: { $gte: twoDaysAgo } }),
+      db.collection("yelp_insight").find({ user_id: userId, timestamp: { $gte: twoDaysAgo } }).sort({ timestamp: -1 }).limit(3).toArray(),
+      db.collection("nutrition_sessions_summary").findOne({ user_id: userId, started_at: { $gte: twoDaysAgo } }),
       // Community activity — past 2 days
-      db.collection("community-posts").find({ userId, createdAt: { $gte: twoDaysAgo } }).sort({ createdAt: -1 }).limit(5).toArray(),
-      db.collection("community-comments").find({ userId, createdAt: { $gte: twoDaysAgo } }).sort({ createdAt: -1 }).limit(5).toArray(),
-      db.collection("community-moods").find({ userId, createdAt: { $gte: twoDaysAgo } }).sort({ createdAt: -1 }).limit(5).toArray(),
-      db.collection("community-events").find({ attendees: userId, date: { $gte: new Date().toISOString().split("T")[0] } }).sort({ date: 1 }).limit(5).toArray(),
-      db.collection("community-connections").find({ $or: [{ fromUserId: userId }, { toUserId: userId }] }).sort({ timestamp: -1 }).limit(10).toArray(),
+      db.collection("community_posts").find({ user_id: userId, created_at: { $gte: twoDaysAgo } }).sort({ created_at: -1 }).limit(5).toArray(),
+      db.collection("community_comments").find({ user_id: userId, created_at: { $gte: twoDaysAgo } }).sort({ created_at: -1 }).limit(5).toArray(),
+      db.collection("community_moods").find({ user_id: userId, created_at: { $gte: twoDaysAgo } }).sort({ created_at: -1 }).limit(5).toArray(),
+      db.collection("community_events").find({ attendees: userId, date: { $gte: new Date().toISOString().split("T")[0] } }).sort({ date: 1 }).limit(5).toArray(),
+      db.collection("community_connections").find({ $or: [{ from_user_id: userId }, { to_user_id: userId }] }).sort({ timestamp: -1 }).limit(10).toArray(),
     ]);
+
+    if (userProfile?.date_of_birth && !userProfile.dateOfBirth) {
+      userProfile.dateOfBirth = userProfile.date_of_birth;
+    }
+
+    for (const favorite of favorites) {
+      if (favorite.restaurant_name && !favorite.restaurantName) {
+        favorite.restaurantName = favorite.restaurant_name;
+      }
+    }
+
+    if (yelpInsights[0]) {
+      if (yelpInsights[0].top_categories && !yelpInsights[0].topCategories) {
+        yelpInsights[0].topCategories = yelpInsights[0].top_categories;
+      }
+      if (yelpInsights[0].search_locations && !yelpInsights[0].searchLocations) {
+        yelpInsights[0].searchLocations = yelpInsights[0].search_locations;
+      }
+    }
 
     // ── Console log all fetched data ──────────────────────────
     console.log("\n🤖 [Agent Profile] ── Past 2 Days Data ──────────────────");
@@ -242,13 +261,13 @@ Now write a 4-6 sentence profile context in second person ("You are someone who.
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     await db.collection("agent_profile_cache").updateOne(
-      { userId },
+      { user_id: userId },
       {
         $set: {
-          userId,
-          profileContext,
-          builtAt: now,
-          expiresAt,
+          user_id: userId,
+          profile_context: profileContext,
+          built_at: now,
+          expires_at: expiresAt,
         },
       },
       { upsert: true }
