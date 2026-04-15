@@ -6,7 +6,7 @@ import { Navigation } from "@/components/Navigation";
 export const dynamic = "force-dynamic";
 
 export default async function FitnessDashboard() {
-  const user = await getCurrentUser();
+  let user = await getCurrentUser();
   
   if (!user) {
     const bypassAuth = process.env.BYPASS_AUTH === "true";
