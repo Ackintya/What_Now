@@ -159,6 +159,13 @@ interface AuthUser {
 }
 
 export default function Home() {
+  const [urls, setUrls] = useState({
+    nutrition: "http://localhost:3003",
+    yelp: "http://localhost:3004",
+    skin: "http://localhost:3002",
+    community: "http://localhost:3006"
+  });
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -170,6 +177,13 @@ export default function Home() {
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/config', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => setUrls(prev => ({...prev, ...data})))
+      .catch(console.error);
+  }, []);
 
   // Check if user is logged in
   useEffect(() => {
@@ -435,7 +449,13 @@ export default function Home() {
                 </ul>
 
                 <a
-                  href={screen.ctaHref}
+                  href={
+                    screen.id === 'fitness' ? '/fitness' : 
+                    screen.id === 'nutrition' ? `/api/sso?target=${encodeURIComponent(urls.nutrition)}` :
+                    screen.id === 'skin' || screen.id === 'hair' ? `/api/sso?target=${encodeURIComponent(urls.skin)}` :
+                    screen.id === 'restaurants' ? `/api/sso?target=${encodeURIComponent(urls.yelp)}` :
+                    screen.id === 'community' ? `/api/sso?target=${encodeURIComponent(urls.community)}` : screen.ctaHref
+                  }
                   className="mt-8 inline-flex items-center gap-2 rounded-xl bg-doom-primary px-6 py-3 font-semibold text-doom-bg transition-transform hover:-translate-y-0.5"
                 >
                   {screen.ctaLabel}
