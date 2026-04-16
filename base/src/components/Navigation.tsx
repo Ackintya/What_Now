@@ -35,7 +35,6 @@ export function Navigation({ user }: NavigationProps) {
     yelp: string;
     skin: string;
     community: string;
-    token?: string;
   }>({
     dashboard: "http://localhost:3005",
     nutrition: "http://localhost:3003",
@@ -61,11 +60,8 @@ export function Navigation({ user }: NavigationProps) {
   ];
 
   const getHref = (item: MenuItem) => {
-    if (item.external && urls.token) {
-      // Append token to the URL query string
-      const url = new URL(item.href);
-      url.searchParams.append('token', urls.token);
-      return url.toString();
+    if (item.external) {
+      return `/api/sso?target=${encodeURIComponent(item.href)}`;
     }
     return item.href;
   };
