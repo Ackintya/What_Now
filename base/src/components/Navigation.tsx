@@ -25,18 +25,33 @@ interface NavigationProps {
   user?: AuthUser | null;
 }
 
-const menuItems: MenuItem[] = [
-  { name: "Dashboard", href: process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3005", icon: Activity, color: "text-doom-accent", external: true },
-  { name: "Physical Fitness", href: "/fitness", icon: Dumbbell, color: "text-doom-primary" },
-  { name: "Nutrition", href: process.env.NEXT_PUBLIC_NUTRITION_URL || "http://localhost:3003", icon: Apple, color: "text-green-400", external: true },
-  { name: "Find Restaurants", href: process.env.NEXT_PUBLIC_YELP_URL || "http://localhost:3004", icon: UtensilsCrossed, color: "text-yellow-400", external: true },
-  { name: "Skin & Hair Analysis", href: process.env.NEXT_PUBLIC_SKIN_URL || "http://localhost:3002", icon: Droplet, color: "text-blue-400", external: true },
-  { name: "Community", href: process.env.NEXT_PUBLIC_COMMUNITY_URL || "http://localhost:3006", icon: Users2, color: "text-pink-400", external: true },
-];
-
 export function Navigation({ user }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+
+  const [urls, setUrls] = useState({
+    dashboard: "http://localhost:3005",
+    nutrition: "http://localhost:3003",
+    yelp: "http://localhost:3004",
+    skin: "http://localhost:3002",
+    community: "http://localhost:3006"
+  });
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => setUrls(prev => ({...prev, ...data})))
+      .catch(console.error);
+  }, []);
+
+  const menuItems: MenuItem[] = [
+    { name: "Dashboard", href: urls.dashboard, icon: Activity, color: "text-doom-accent", external: true },
+    { name: "Physical Fitness", href: "/fitness", icon: Dumbbell, color: "text-doom-primary" },
+    { name: "Nutrition", href: urls.nutrition, icon: Apple, color: "text-green-400", external: true },
+    { name: "Find Restaurants", href: urls.yelp, icon: UtensilsCrossed, color: "text-yellow-400", external: true },
+    { name: "Skin & Hair Analysis", href: urls.skin, icon: Droplet, color: "text-blue-400", external: true },
+    { name: "Community", href: urls.community, icon: Users2, color: "text-pink-400", external: true },
+  ];
 
   const getHref = (item: MenuItem) => item.href;
 
