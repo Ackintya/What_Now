@@ -10,6 +10,7 @@ ENV JWT_SECRET=placeholder
 ENV GEMINI_API_KEY=placeholder
 ENV NEXT_PUBLIC_APP_URL=https://placeholder.run.app
 ENV SKIN_SERVICE_URL=https://placeholder.run.app
+ENV NEXT_PUBLIC_DASHBOARD_URL=https://placeholder.run.app
 RUN npm run build
 
 FROM node:20-alpine AS runner
