@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, Droplet, Home, Dumbbell, Apple, UtensilsCrossed, UserRound, LogOut } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -15,12 +15,7 @@ interface NavigationProps {
   user?: User;
 }
 
-const menuItems = [
-  { name: "Home", href: "http://localhost:3000", icon: Home, color: "text-doom-primary" },
-  { name: "Physical Fitness", href: "http://localhost:3000/fitness", icon: Dumbbell, color: "text-doom-primary" },
-  { name: "Nutrition", href: "http://localhost:3003", icon: Apple, color: "text-green-400" },
-  { name: "Find Restaurants", href: "http://localhost:3004", icon: UtensilsCrossed, color: "text-yellow-400" },
-];
+
 
 export function Navigation({ user }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +25,7 @@ export function Navigation({ user }: NavigationProps) {
     setIsLoggingOut(true);
     try {
       // Call logout API
-      await fetch("http://localhost:3000/api/auth/logout", {
+      await fetch(`${urls.base}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -41,7 +36,7 @@ export function Navigation({ user }: NavigationProps) {
       // This ensures cookies are cleared and user sees login page
       // Clear agent profile memory
       Object.keys(localStorage).filter((k) => k.startsWith("wb_agent_profile_")).forEach((k) => localStorage.removeItem(k));
-      window.location.href = "http://localhost:3000";
+      window.location.href = urls.base;
     }
   };
 
@@ -52,7 +47,7 @@ export function Navigation({ user }: NavigationProps) {
         <div className="px-2">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <a href="http://localhost:3002" className="flex items-center space-x-2">
+            <a href={getHrefWrapper(urls.skin)} className="flex items-center space-x-2">
               <img src="/assets/logo.jpg" alt="What Now?" className="h-9 w-auto mix-blend-screen" />
               <span className="text-xl font-bold text-doom-text hidden sm:block">
                 What Now?
@@ -66,7 +61,7 @@ export function Navigation({ user }: NavigationProps) {
                 return (
                   <a
                     key={item.name}
-                    href={item.href}
+                    href={getHrefWrapper(item.href)}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-doom-bg/50 transition-colors ${item.color}`}
                   >
                     <Icon className="w-5 h-5" />
@@ -77,7 +72,7 @@ export function Navigation({ user }: NavigationProps) {
 
               {user && (
                 <a
-                  href="http://localhost:3000/profile"
+                  href={getHrefWrapper(`${urls.base}/profile`)}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-doom-bg/50 transition-colors text-doom-accent"
                 >
                   <UserRound className="w-5 h-5" />
@@ -160,7 +155,7 @@ export function Navigation({ user }: NavigationProps) {
                       transition={{ delay: index * 0.05 }}
                     >
                       <a
-                        href={item.href}
+                        href={getHrefWrapper(item.href)}
                         onClick={() => setIsOpen(false)}
                         className={`flex items-center space-x-4 p-4 rounded-lg hover:bg-doom-bg/50 transition-colors group ${item.color}`}
                       >

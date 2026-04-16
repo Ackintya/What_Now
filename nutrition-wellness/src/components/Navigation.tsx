@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, Apple, Home, Dumbbell, UtensilsCrossed, Droplet, UserRound, LogOut } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -15,12 +15,7 @@ interface NavigationProps {
   user?: User;
 }
 
-const menuItems = [
-  { name: "Home", href: "http://localhost:3000", icon: Home, color: "text-doom-primary" },
-  { name: "Physical Fitness", href: "http://localhost:3000/fitness", icon: Dumbbell, color: "text-doom-primary" },
-  { name: "Find Restaurants", href: "http://localhost:3004", icon: UtensilsCrossed, color: "text-yellow-400" },
-  { name: "Skin & Hair", href: "http://localhost:3002", icon: Droplet, color: "text-blue-400" },
-];
+
 
 export function Navigation({ user }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +24,7 @@ export function Navigation({ user }: NavigationProps) {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await fetch("http://localhost:3000/api/auth/logout", {
+      await fetch(`${urls.base}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -38,7 +33,7 @@ export function Navigation({ user }: NavigationProps) {
     } finally {
       // Clear agent profile memory
       Object.keys(localStorage).filter((k) => k.startsWith("wb_agent_profile_")).forEach((k) => localStorage.removeItem(k));
-      window.location.href = "http://localhost:3000";
+      window.location.href = urls.base;
     }
   };
 
@@ -47,7 +42,7 @@ export function Navigation({ user }: NavigationProps) {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-doom-surface/95 backdrop-blur-sm border-b border-doom-primary/20">
         <div className="px-2">
           <div className="flex items-center justify-between h-16">
-            <a href="http://localhost:3003" className="flex items-center space-x-2">
+            <a href={getHrefWrapper(urls.nutrition)} className="flex items-center space-x-2">
               <img src="/assets/logo.jpg" alt="What Now?" className="h-9 w-auto mix-blend-screen" />
               <span className="text-xl font-bold text-doom-text hidden sm:block">What Now?</span>
             </a>
@@ -58,7 +53,7 @@ export function Navigation({ user }: NavigationProps) {
                 return (
                   <a
                     key={item.name}
-                    href={item.href}
+                    href={getHrefWrapper(item.href)}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-doom-bg/50 transition-colors ${item.color}`}
                   >
                     <Icon className="w-5 h-5" />
@@ -69,7 +64,7 @@ export function Navigation({ user }: NavigationProps) {
 
               {user && (
                 <a
-                  href="http://localhost:3000/profile"
+                  href={getHrefWrapper(`${urls.base}/profile`)}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-doom-bg/50 transition-colors text-doom-accent"
                 >
                   <UserRound className="w-5 h-5" />
@@ -145,7 +140,7 @@ export function Navigation({ user }: NavigationProps) {
                       transition={{ delay: index * 0.05 }}
                     >
                       <a
-                        href={item.href}
+                        href={getHrefWrapper(item.href)}
                         onClick={() => setIsOpen(false)}
                         className={`flex items-center space-x-4 p-4 rounded-lg hover:bg-doom-bg/50 transition-colors group ${item.color}`}
                       >
