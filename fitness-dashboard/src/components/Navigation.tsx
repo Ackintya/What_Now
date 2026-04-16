@@ -39,7 +39,12 @@ export function Navigation({ user }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
-  const getHref = (item: MenuItem) => item.href;
+  const getHref = (item: MenuItem) => {
+    if (item.external) {
+      return `/api/sso?target=${encodeURIComponent(item.href)}`;
+    }
+    return item.href;
+  };
 
   const handleLogout = async () => {
     try {
@@ -64,7 +69,7 @@ export function Navigation({ user }: NavigationProps) {
         <div className="px-2">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <a href={BASE_URL} className="flex items-center space-x-2">
+            <a href={`/api/sso?target=${encodeURIComponent(BASE_URL)}`} className="flex items-center space-x-2">
               <img src="/assets/logo.jpg" alt="What Now?" className="h-9 w-auto mix-blend-screen" />
               <span className="text-xl font-bold text-doom-text hidden sm:block">What Now?</span>
             </a>
@@ -104,7 +109,7 @@ export function Navigation({ user }: NavigationProps) {
                   <div className="h-8 w-px bg-doom-primary/30" />
 
                   {/* Profile Section */}
-                  <a href={`${BASE_URL}/profile`} className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-doom-bg/30 hover:bg-doom-bg/50 transition-colors">
+                  <a href={`/api/sso?target=${encodeURIComponent(`${BASE_URL}/profile`)}`} className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-doom-bg/30 hover:bg-doom-bg/50 transition-colors">
                     <UserRound className="w-5 h-5 text-doom-primary" />
                     <span className="text-sm font-medium text-doom-text">{user.name}</span>
                   </a>
